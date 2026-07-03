@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { collection, getDocs, query, where } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
+import GestionInvitados from './GestionInvitados'
 
 // Colores de acento que se van alternando por boda, para que cada
 // tarjeta se distinga visualmente (igual que en la vista previa aprobada)
@@ -19,6 +20,7 @@ export default function AdminPanel() {
   const [bodas, setBodas] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
+  const [bodaSeleccionada, setBodaSeleccionada] = useState(null)
 
   useEffect(() => {
     cargarBodas()
@@ -66,6 +68,10 @@ export default function AdminPanel() {
     (acc, b) => acc + (b.invitados?.filter(i => i.estado_rsvp === 'pendiente').length || 0),
     0
   )
+
+  if (bodaSeleccionada) {
+    return <GestionInvitados boda={bodaSeleccionada} onVolver={() => setBodaSeleccionada(null)} />
+  }
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto', padding: '2rem 1.5rem' }}>
@@ -140,6 +146,7 @@ export default function AdminPanel() {
             return (
               <div
                 key={boda.id}
+                onClick={() => setBodaSeleccionada(boda)}
                 style={{
                   background: 'var(--color-surface)', border: '0.5px solid var(--color-border)',
                   borderRadius: 'var(--radius)', padding: '1rem 1.1rem', cursor: 'pointer',
