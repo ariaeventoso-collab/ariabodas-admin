@@ -5,6 +5,7 @@ import GestionInvitados from './GestionInvitados'
 import GestorMesas from './GestorMesas'
 import AccesosBoda from './AccesosBoda'
 import DisenoBoda from './DisenoBoda'
+import CrearBoda from './CrearBoda'
 
 // Colores de acento que se van alternando por boda, para que cada
 // tarjeta se distinga visualmente (igual que en la vista previa aprobada)
@@ -25,6 +26,7 @@ export default function AdminPanel() {
   const [error, setError] = useState(null)
   const [bodaSeleccionada, setBodaSeleccionada] = useState(null)
   const [vista, setVista] = useState('invitados')
+  const [mostrarCrearBoda, setMostrarCrearBoda] = useState(false)
 
   useEffect(() => {
     cargarBodas()
@@ -164,13 +166,20 @@ export default function AdminPanel() {
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>Tus bodas</span>
-        <button style={{
+        <button onClick={() => setMostrarCrearBoda(!mostrarCrearBoda)} style={{
           fontSize: 13, background: 'transparent', border: '0.5px solid var(--color-border)',
           borderRadius: 8, padding: '6px 12px', color: 'var(--color-text-primary)',
         }}>
-          + Nueva boda
+          {mostrarCrearBoda ? 'Cancelar' : '+ Nueva boda'}
         </button>
       </div>
+
+      {mostrarCrearBoda && (
+        <CrearBoda
+          onCreada={() => { setMostrarCrearBoda(false); cargarBodas() }}
+          onCancelar={() => setMostrarCrearBoda(false)}
+        />
+      )}
 
       {cargando && (
         <p style={{ fontSize: 14, color: 'var(--color-text-muted)' }}>Cargando tus bodas…</p>
