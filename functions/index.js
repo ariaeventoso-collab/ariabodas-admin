@@ -118,7 +118,7 @@ exports.buscarInvitado = onCall(async (request) => {
 // cuántos van, o marca "no voy". Valida que no exceda su tope.
 // ============================================
 exports.confirmarRSVP = onCall(async (request) => {
-  const { bodaSlug, invitadoId, pasesConfirmados } = request.data
+  const { bodaSlug, invitadoId, pasesConfirmados, notas } = request.data
 
   if (!bodaSlug || !invitadoId || pasesConfirmados === undefined) {
     throw new HttpsError('invalid-argument', 'Faltan datos para confirmar.')
@@ -148,6 +148,7 @@ exports.confirmarRSVP = onCall(async (request) => {
   await invitadoRef.update({
     pases_confirmados: pasesConfirmados,
     estado_rsvp: pasesConfirmados === 0 ? 'no_confirmado' : 'confirmado',
+    notas_alimenticias: notas || '',
     actualizado_en: new Date(),
   })
 

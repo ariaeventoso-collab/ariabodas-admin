@@ -6,7 +6,7 @@ import { db } from '../lib/firebaseClient'
 // en src/components/plantillas/, agrégala aquí también con su nombre visible.
 const PLANTILLAS_DISPONIBLES = [
   { id: 'clasica', nombre: 'Clásica — sobre animado' },
-  // { id: 'moderna', nombre: 'Moderna — ejemplo futuro' },
+  { id: 'jardin_botanico', nombre: 'Jardín Botánico — salvia y dorado' },
 ]
 
 const TIPOS_REGALO = [

@@ -1,4 +1,5 @@
 import PlantillaClasica from './PlantillaClasica'
+import PlantillaJardinBotanico from './PlantillaJardinBotanico'
 
 // ============================================
 // REGISTRO DE PLANTILLAS
@@ -12,7 +13,7 @@ import PlantillaClasica from './PlantillaClasica'
 
 export const plantillas = {
   clasica: PlantillaClasica,
-  // moderna: PlantillaModerna,   <- ejemplo de cómo se vería agregar una nueva
+  jardin_botanico: PlantillaJardinBotanico,
 }
 
 export const plantillaPorDefecto = 'clasica'

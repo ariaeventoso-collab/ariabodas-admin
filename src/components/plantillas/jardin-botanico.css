@@ -1,0 +1,41 @@
+@import "tailwindcss";
+@source "./";
+
+@theme inline {
+  --color-sage: var(--sage);
+  --color-sage-deep: var(--sage-deep);
+  --color-linen: var(--linen);
+  --color-linen-warm: var(--linen-warm);
+  --color-gold: var(--gold);
+  --color-charcoal: var(--charcoal);
+
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+  --font-sans: "Lato", ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-soft: 0 10px 40px -10px oklch(0.45 0.03 130 / 0.15);
+  --shadow-card: 0 20px 50px -20px oklch(0.45 0.03 130 / 0.2);
+}
+
+/* Estos valores se sobreescriben por boda vía CSS variables en línea
+   (ver PlantillaJardinBotanico.jsx), estos son solo el default. */
+.plantilla-jardin-botanico {
+  --sage: oklch(0.55 0.045 130);
+  --sage-deep: oklch(0.42 0.04 132);
+  --linen: oklch(0.975 0.008 85);
+  --linen-warm: oklch(0.955 0.012 80);
+  --gold: oklch(0.65 0.07 75);
+  --charcoal: oklch(0.28 0.015 240);
+
+  font-family: var(--font-sans);
+  font-weight: 300;
+  background-color: var(--linen);
+  color: var(--charcoal);
+}
+
+.plantilla-jardin-botanico h1,
+.plantilla-jardin-botanico h2,
+.plantilla-jardin-botanico h3,
+.plantilla-jardin-botanico h4 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+}
