@@ -6,6 +6,7 @@ import GestorMesas from './GestorMesas'
 import AccesosBoda from './AccesosBoda'
 import DisenoBoda from './DisenoBoda'
 import CrearBoda from './CrearBoda'
+import MensajesBoda from './MensajesBoda'
 
 // Colores de acento que se van alternando por boda, para que cada
 // tarjeta se distinga visualmente (igual que en la vista previa aprobada)
@@ -126,6 +127,16 @@ export default function AdminPanel() {
             Mesas
           </button>
           <button
+            onClick={() => setVista('mensajes')}
+            style={{
+              fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
+              background: vista === 'mensajes' ? 'var(--color-sage-light)' : 'transparent',
+              color: vista === 'mensajes' ? 'var(--color-sage-text)' : 'var(--color-text-secondary)',
+            }}
+          >
+            Mensajes
+          </button>
+          <button
             onClick={() => setVista('accesos')}
             style={{
               fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
@@ -151,6 +162,9 @@ export default function AdminPanel() {
         )}
         {vista === 'mesas' && (
           <GestorMesas boda={bodaSeleccionada} ocultarVolver />
+        )}
+        {vista === 'mensajes' && (
+          <MensajesBoda boda={bodaSeleccionada} />
         )}
         {vista === 'accesos' && (
           <AccesosBoda boda={bodaSeleccionada} />

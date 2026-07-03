@@ -4,6 +4,7 @@ import { signOut } from 'firebase/auth'
 import { db, auth } from '../lib/firebaseClient'
 import GestionInvitados from './GestionInvitados'
 import GestorMesas from './GestorMesas'
+import MensajesBoda from './MensajesBoda'
 
 // Panel para novios y wedding planners: acceso solo a SU boda,
 // sin lista de otras bodas y sin poder editar el diseño de la invitación.
@@ -11,7 +12,10 @@ export default function PanelLimitado({ perfilUsuario }) {
   const [boda, setBoda] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
-  const [vista, setVista] = useState('invitados')
+  const esPlanner = perfilUsuario.rol === 'wedding_planner'
+  // Los novios ven primero sus mensajes; el wedding planner no tiene
+  // acceso a esa sección, así que arranca directo en Invitados.
+  const [vista, setVista] = useState(esPlanner ? 'invitados' : 'mensajes')
 
   useEffect(() => {
     cargarBoda()
@@ -59,8 +63,6 @@ export default function PanelLimitado({ perfilUsuario }) {
     )
   }
 
-  const esPlanner = perfilUsuario.rol === 'wedding_planner'
-
   return (
     <div>
       {/* Encabezado simple: logo, nombre de la boda, rol, cerrar sesión */}
@@ -82,8 +84,20 @@ export default function PanelLimitado({ perfilUsuario }) {
         </div>
       </div>
 
-      {/* Pestañas: Invitados / Mesas (sin acceso a diseño, sin lista de otras bodas) */}
+      {/* Pestañas: Mensajes (solo novios) / Invitados / Mesas */}
       <div style={{ display: 'flex', gap: 8, maxWidth: 720, margin: '0 auto 0', padding: '0 1.5rem' }}>
+        {!esPlanner && (
+          <button
+            onClick={() => setVista('mensajes')}
+            style={{
+              fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
+              background: vista === 'mensajes' ? 'var(--color-sage-light)' : 'transparent',
+              color: vista === 'mensajes' ? 'var(--color-sage-text)' : 'var(--color-text-secondary)',
+            }}
+          >
+            Mensajes
+          </button>
+        )}
         <button
           onClick={() => setVista('invitados')}
           style={{
@@ -106,11 +120,11 @@ export default function PanelLimitado({ perfilUsuario }) {
         </button>
       </div>
 
-      {vista === 'invitados' ? (
-        <GestionInvitados boda={boda} ocultarVolver />
-      ) : (
-        <GestorMesas boda={boda} ocultarVolver />
+      {vista === 'mensajes' && !esPlanner && (
+        <div style={{ paddingTop: '1.5rem' }}><MensajesBoda boda={boda} /></div>
       )}
+      {vista === 'invitados' && <GestionInvitados boda={boda} ocultarVolver />}
+      {vista === 'mesas' && <GestorMesas boda={boda} ocultarVolver />}
     </div>
   )
 }

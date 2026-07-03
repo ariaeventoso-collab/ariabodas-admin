@@ -193,7 +193,7 @@ function SearchAndRsvp({ boda }) {
 function GuestCardYRsvp({ boda, invitado, onBuscarDeNuevo }) {
   const [attending, setAttending] = useState(null)
   const [count, setCount] = useState(invitado.pases_asignados)
-  const [notas, setNotas] = useState('')
+  const [mensaje, setMensaje] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [enviado, setEnviado] = useState(false)
   const [error, setError] = useState(null)
@@ -207,7 +207,7 @@ function GuestCardYRsvp({ boda, invitado, onBuscarDeNuevo }) {
         bodaSlug: boda.slug,
         invitadoId: invitado.invitado_id,
         pasesConfirmados: attending ? count : 0,
-        notas: attending ? notas : '',
+        mensaje: attending ? mensaje : '',
       })
       setEnviado(true)
     } catch (e) {
@@ -282,11 +282,11 @@ function GuestCardYRsvp({ boda, invitado, onBuscarDeNuevo }) {
               </div>
             </div>
             <div>
-              <label className="mb-3 block text-[10px] uppercase tracking-[0.3em] text-gold">Restricciones alimenticias</label>
+              <label className="mb-3 block text-[10px] uppercase tracking-[0.3em] text-gold">Déjale un mensaje a los novios (opcional)</label>
               <textarea
-                value={notas} onChange={(e) => setNotas(e.target.value)} rows={3}
+                value={mensaje} onChange={(e) => setMensaje(e.target.value)} rows={3}
                 className="w-full border border-sage/20 bg-transparent p-3 text-sm italic focus:border-gold focus:outline-none"
-                placeholder="Alergias o preferencias…"
+                placeholder="Un mensaje bonito, buenos deseos, lo que quieras…"
               />
             </div>
           </div>
