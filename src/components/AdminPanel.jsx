@@ -78,15 +78,33 @@ export default function AdminPanel() {
   if (bodaSeleccionada) {
     return (
       <div>
-        <div style={{ maxWidth: 720, margin: '1.5rem auto -0.75rem', padding: '0 1.5rem' }}>
-          <a
-            href={`/i/${bodaSeleccionada.slug}`} target="_blank" rel="noreferrer"
-            style={{ fontSize: 12, color: 'var(--color-sage-text)', fontFamily: 'var(--font-sans)' }}
-          >
-            Ver invitación pública →
-          </a>
+        {/* Logo persistente en todas las pestañas */}
+        <div style={{ padding: '1.5rem 1.5rem 0' }}>
+          <img src="/logo-aria.png" alt="Aria Eventos" style={{ height: 26, width: 'auto' }} />
         </div>
-        <div style={{ display: 'flex', gap: 8, maxWidth: 720, margin: '0.5rem auto -1.5rem', padding: '0 1.5rem' }}>
+
+        <div style={{ maxWidth: 720, margin: '1rem auto 0', padding: '0 1.5rem' }}>
+          <button
+            onClick={() => setBodaSeleccionada(null)}
+            style={{ fontSize: 13, background: 'transparent', border: 'none', color: 'var(--color-text-secondary)', padding: 0, marginBottom: 12, cursor: 'pointer' }}
+          >
+            ← Volver a tus bodas
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+            <p style={{ fontFamily: 'var(--font-display)', fontSize: 24, margin: 0 }}>
+              {bodaSeleccionada.nombre_novio_1} &amp; {bodaSeleccionada.nombre_novio_2}
+            </p>
+            <a
+              href={`/i/${bodaSeleccionada.slug}`} target="_blank" rel="noreferrer"
+              style={{ fontSize: 12, color: 'var(--color-sage-text)', fontFamily: 'var(--font-sans)' }}
+            >
+              Ver invitación pública →
+            </a>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, maxWidth: 720, margin: '0 auto 1.5rem', padding: '0 1.5rem' }}>
           <button
             onClick={() => setVista('invitados')}
             style={{
@@ -129,10 +147,10 @@ export default function AdminPanel() {
           </button>
         </div>
         {vista === 'invitados' && (
-          <GestionInvitados boda={bodaSeleccionada} onVolver={() => setBodaSeleccionada(null)} />
+          <GestionInvitados boda={bodaSeleccionada} ocultarVolver />
         )}
         {vista === 'mesas' && (
-          <GestorMesas boda={bodaSeleccionada} onVolver={() => setBodaSeleccionada(null)} />
+          <GestorMesas boda={bodaSeleccionada} ocultarVolver />
         )}
         {vista === 'accesos' && (
           <AccesosBoda boda={bodaSeleccionada} />

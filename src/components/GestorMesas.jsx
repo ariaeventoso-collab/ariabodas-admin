@@ -125,9 +125,6 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
         </button>
       )}
 
-      <p style={{ fontFamily: 'var(--font-display)', fontSize: 24, margin: '0 0 4px' }}>
-        Gestor de mesas — {boda.nombre_novio_1} &amp; {boda.nombre_novio_2}
-      </p>
       <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '0 0 1.5rem' }}>
         Arrastra un invitado de la izquierda hacia una mesa
       </p>

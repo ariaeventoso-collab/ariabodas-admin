@@ -32,6 +32,15 @@ export default function PlantillaClasica({ boda }) {
 }
 
 // ============================================
+function formatearHora(hora24) {
+  if (!hora24) return ''
+  const [h, m] = hora24.split(':').map(Number)
+  const periodo = h >= 12 ? 'PM' : 'AM'
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return `${h12}:${String(m).padStart(2, '0')} ${periodo}`
+}
+
+// ============================================
 // SECCIÓN 1: Sobre animado
 // ============================================
 function Sobre({ boda, primario, claro, onAbrir }) {
@@ -172,7 +181,7 @@ function Itinerario({ eventos, primario }) {
       {eventos.map((ev, i) => (
         <div key={i} style={{ marginBottom: 14, paddingLeft: 14, borderLeft: `2px solid ${primario}` }}>
           <p style={{ fontSize: 17, margin: 0 }}>{ev.nombre_evento}</p>
-          <p style={{ fontSize: 13, color: '#6b6b63', margin: '2px 0 4px', fontFamily: 'Inter, sans-serif' }}>{ev.hora} · {ev.lugar}</p>
+          <p style={{ fontSize: 13, color: '#6b6b63', margin: '2px 0 4px', fontFamily: 'Inter, sans-serif' }}>{formatearHora(ev.hora)} · {ev.lugar}</p>
           {ev.link_mapa && (
             <a href={ev.link_mapa} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: primario, fontFamily: 'Inter, sans-serif' }}>
               Ver ubicación →

@@ -10,6 +10,14 @@ const GALERIA_DEFECTO = [
   { src: '/plantilla-jardin/gallery-3.jpg', h: 'aspect-[2/3]' },
 ]
 
+function formatearHora(hora24) {
+  if (!hora24) return ''
+  const [h, m] = hora24.split(':').map(Number)
+  const periodo = h >= 12 ? 'PM' : 'AM'
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return `${h12}:${String(m).padStart(2, '0')} ${periodo}`
+}
+
 // PLANTILLA: Jardín Botánico
 // Diseñada en Lovable. Paleta salvia/dorado/lino, tipografía Playfair Display.
 export default function PlantillaJardinBotanico({ boda }) {
@@ -357,7 +365,7 @@ function Itinerary({ eventos }) {
         <div className="space-y-16">
           {eventos.map((e, i) => (
             <div key={i} className="flex items-start gap-6">
-              <span className="shrink-0 font-serif text-2xl text-gold">{e.hora}</span>
+              <span className="shrink-0 font-serif text-2xl text-gold">{formatearHora(e.hora)}</span>
               <div>
                 <h4 className="mb-1 text-lg font-medium uppercase tracking-wider">{e.nombre_evento}</h4>
                 <p className="mb-4 text-sm text-linen/60">{e.lugar}</p>

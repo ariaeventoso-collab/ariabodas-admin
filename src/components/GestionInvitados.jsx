@@ -128,11 +128,6 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
         </button>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4 }}>
-        <p style={{ fontFamily: 'var(--font-display)', fontSize: 24, margin: 0 }}>
-          {boda.nombre_novio_1} &amp; {boda.nombre_novio_2}
-        </p>
-      </div>
       <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '0 0 1.5rem' }}>
         {invitados.length} familias registradas · {totalPases} pases en total
       </p>

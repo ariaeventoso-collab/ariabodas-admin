@@ -33,9 +33,6 @@ export default function DisenoBoda({ boda, onGuardado }) {
   const [numeroCuenta, setNumeroCuenta] = useState(boda.regalos?.cuenta_deposito?.numero_cuenta || '')
   const [textoSobrecitos, setTextoSobrecitos] = useState(boda.regalos?.sobrecitos?.texto_mostrar || 'Se aceptan sobrecitos')
 
-  const [galeria, setGaleria] = useState(boda.galeria_fotos || [])
-  const [nuevaFotoUrl, setNuevaFotoUrl] = useState('')
-
   const [codigoVestimenta, setCodigoVestimenta] = useState(boda.codigo_vestimenta || '')
   const [notasAdicionales, setNotasAdicionales] = useState(boda.notas_adicionales || '')
 
@@ -50,16 +47,6 @@ export default function DisenoBoda({ boda, onGuardado }) {
   }
   function quitarEvento(i) {
     setItinerario(itinerario.filter((_, idx) => idx !== i))
-  }
-
-  // ---- Galería: agregar/quitar fotos ----
-  function agregarFoto() {
-    if (!nuevaFotoUrl.trim()) return
-    setGaleria([...galeria, nuevaFotoUrl.trim()])
-    setNuevaFotoUrl('')
-  }
-  function quitarFoto(i) {
-    setGaleria(galeria.filter((_, idx) => idx !== i))
   }
 
   function alternarTipoRegalo(id) {
@@ -81,7 +68,6 @@ export default function DisenoBoda({ boda, onGuardado }) {
         cuenta_deposito: { banco: banco.trim(), titular: titular.trim(), numero_cuenta: numeroCuenta.trim() },
         sobrecitos: { texto_mostrar: textoSobrecitos.trim() },
       },
-      galeria_fotos: galeria,
       codigo_vestimenta: codigoVestimenta.trim(),
       notas_adicionales: notasAdicionales.trim(),
     }
@@ -130,7 +116,7 @@ export default function DisenoBoda({ boda, onGuardado }) {
           <div key={i} style={{ background: 'var(--color-surface-muted)', borderRadius: 8, padding: 10, marginBottom: 8 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8, marginBottom: 6 }}>
               <input type="text" placeholder="Nombre del evento (ej. Ceremonia)" value={ev.nombre_evento} onChange={e => actualizarEvento(i, 'nombre_evento', e.target.value)} style={campoEstilo} />
-              <input type="text" placeholder="Hora" value={ev.hora} onChange={e => actualizarEvento(i, 'hora', e.target.value)} style={campoEstilo} />
+              <input type="time" value={ev.hora} onChange={e => actualizarEvento(i, 'hora', e.target.value)} style={campoEstilo} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8 }}>
               <input type="text" placeholder="Lugar" value={ev.lugar} onChange={e => actualizarEvento(i, 'lugar', e.target.value)} style={campoEstilo} />
@@ -169,20 +155,6 @@ export default function DisenoBoda({ boda, onGuardado }) {
         {tiposRegalo.includes('sobrecitos') && (
           <input type="text" value={textoSobrecitos} onChange={e => setTextoSobrecitos(e.target.value)} style={campoEstilo} />
         )}
-      </Bloque>
-
-      {/* ---- Galería ---- */}
-      <Bloque titulo="Galería de fotos">
-        {galeria.map((url, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <span style={{ fontSize: 12, color: 'var(--color-text-muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{url}</span>
-            <button onClick={() => quitarFoto(i)} style={botonQuitarEstilo}>✕</button>
-          </div>
-        ))}
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input type="text" placeholder="URL de la foto" value={nuevaFotoUrl} onChange={e => setNuevaFotoUrl(e.target.value)} style={{ ...campoEstilo, flex: 1 }} />
-          <button onClick={agregarFoto} style={botonAgregarEstilo}>+ Agregar</button>
-        </div>
       </Bloque>
 
       {/* ---- Vestimenta y notas ---- */}
