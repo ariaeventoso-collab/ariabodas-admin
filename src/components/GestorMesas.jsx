@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { collection, getDocs, addDoc, updateDoc, doc, query, orderBy } from 'firebase/firestore'
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
 
 export default function GestorMesas({ boda, onVolver }) {
@@ -10,6 +10,7 @@ export default function GestorMesas({ boda, onVolver }) {
   const [nombreMesa, setNombreMesa] = useState('')
   const [capacidadMesa, setCapacidadMesa] = useState(8)
   const [invitadoArrastrado, setInvitadoArrastrado] = useState(null)
+  const [mesaEditando, setMesaEditando] = useState(null)
 
   useEffect(() => {
     cargarTodo()
@@ -76,6 +77,29 @@ export default function GestorMesas({ boda, onVolver }) {
 
     await updateDoc(doc(db, 'bodas', boda.id, 'mesas', mesa.id), { asignaciones: nuevasAsignaciones })
     setInvitadoArrastrado(null)
+    cargarTodo()
+  }
+
+  async function guardarEdicionMesa(e) {
+    e.preventDefault()
+    if (!mesaEditando.nombre.trim()) return
+    await updateDoc(doc(db, 'bodas', boda.id, 'mesas', mesaEditando.id), {
+      nombre: mesaEditando.nombre.trim(),
+      capacidad: Number(mesaEditando.capacidad),
+    })
+    setMesaEditando(null)
+    cargarTodo()
+  }
+
+  async function eliminarMesa(mesa) {
+    const conGente = mesa.asignaciones.length > 0
+    const confirmar = window.confirm(
+      conGente
+        ? `"${mesa.nombre}" tiene ${mesa.asignaciones.length} invitado(s) asignado(s). Al eliminarla, esos invitados regresan a la lista sin mesa. ¿Eliminar de todas formas?`
+        : `¿Eliminar la mesa "${mesa.nombre}"?`
+    )
+    if (!confirmar) return
+    await deleteDoc(doc(db, 'bodas', boda.id, 'mesas', mesa.id))
     cargarTodo()
   }
 
@@ -158,6 +182,44 @@ export default function GestorMesas({ boda, onVolver }) {
             {mesas.map(mesa => {
               const ocupados = mesa.asignaciones.reduce((acc, a) => acc + (a.lugares_ocupados || 0), 0)
               const lleno = ocupados >= mesa.capacidad
+
+              if (mesaEditando?.id === mesa.id) {
+                return (
+                  <form
+                    key={mesa.id}
+                    onSubmit={guardarEdicionMesa}
+                    style={{
+                      background: 'var(--color-surface-muted)', border: '0.5px solid var(--color-border)',
+                      borderRadius: 'var(--radius)', padding: 12,
+                    }}
+                  >
+                    <label style={{ fontSize: 11, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 3 }}>Nombre</label>
+                    <input
+                      type="text" value={mesaEditando.nombre}
+                      onChange={e => setMesaEditando({ ...mesaEditando, nombre: e.target.value })}
+                      style={{ width: '100%', padding: '6px 8px', border: '0.5px solid var(--color-border)', borderRadius: 6, fontSize: 13, marginBottom: 8, boxSizing: 'border-box' }}
+                    />
+                    <label style={{ fontSize: 11, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 3 }}>Asientos</label>
+                    <input
+                      type="number" min="1" value={mesaEditando.capacidad}
+                      onChange={e => setMesaEditando({ ...mesaEditando, capacidad: e.target.value })}
+                      style={{ width: '100%', padding: '6px 8px', border: '0.5px solid var(--color-border)', borderRadius: 6, fontSize: 13, marginBottom: 10, boxSizing: 'border-box' }}
+                    />
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button type="submit" style={{ background: 'var(--color-sage)', color: '#fff', border: 'none', borderRadius: 6, padding: '5px 12px', fontSize: 12 }}>
+                        Guardar
+                      </button>
+                      <button
+                        type="button" onClick={() => setMesaEditando(null)}
+                        style={{ background: 'transparent', border: '0.5px solid var(--color-border)', borderRadius: 6, padding: '5px 12px', fontSize: 12, color: 'var(--color-text-secondary)' }}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </form>
+                )
+              }
+
               return (
                 <div
                   key={mesa.id}
@@ -168,11 +230,25 @@ export default function GestorMesas({ boda, onVolver }) {
                     borderRadius: 'var(--radius)', padding: 12, minHeight: 120,
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                     <p style={{ fontSize: 14, margin: 0 }}>{mesa.nombre}</p>
-                    <span style={{ fontSize: 12, color: lleno ? 'var(--color-coral-text)' : 'var(--color-text-muted)' }}>
-                      {ocupados}/{mesa.capacidad}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 12, color: lleno ? 'var(--color-coral-text)' : 'var(--color-text-muted)' }}>
+                        {ocupados}/{mesa.capacidad}
+                      </span>
+                      <button
+                        onClick={() => setMesaEditando({ ...mesa })}
+                        style={{ background: 'none', border: 'none', color: 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 11 }}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => eliminarMesa(mesa)}
+                        style={{ background: 'none', border: 'none', color: 'var(--color-coral-text)', cursor: 'pointer', fontSize: 11 }}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   </div>
                   {mesa.asignaciones.map(a => (
                     <div key={a.invitado_id} style={{

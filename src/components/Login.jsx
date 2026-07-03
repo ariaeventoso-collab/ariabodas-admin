@@ -34,12 +34,11 @@ export default function Login({ onLoginExitoso }) {
       }}>
         <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
           <div style={{
-            width: 44, height: 44, borderRadius: '50%',
-            border: '1.5px solid var(--color-sage)', margin: '0 auto 12px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'var(--font-display)', fontSize: 18,
-          }}>A</div>
-          <p style={{ fontFamily: 'var(--font-display)', fontSize: 22, margin: 0 }}>AriaBodas</p>
+            background: '#1E1E1C', borderRadius: 10, padding: '14px 20px',
+            display: 'inline-flex', margin: '0 auto 14px',
+          }}>
+            <img src="/logo-aria.png" alt="Aria Eventos" style={{ height: 40, width: 'auto', display: 'block' }} />
+          </div>
           <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
             Panel administrativo
           </p>

@@ -110,13 +110,9 @@ export default function AdminPanel() {
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: '50%',
-            border: '1.5px solid var(--color-sage)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'var(--font-display)', fontSize: 15,
-          }}>A</div>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 22 }}>AriaBodas</span>
+          <div style={{ background: '#1E1E1C', borderRadius: 8, padding: '8px 12px', display: 'inline-flex' }}>
+            <img src="/logo-aria.png" alt="Aria Eventos" style={{ height: 22, width: 'auto', display: 'block' }} />
+          </div>
         </div>
         <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Panel de administrador</span>
       </div>
