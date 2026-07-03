@@ -1,9 +1,77 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https')
 const { initializeApp } = require('firebase-admin/app')
 const { getFirestore } = require('firebase-admin/firestore')
+const { getAuth } = require('firebase-admin/auth')
 
 initializeApp()
 const db = getFirestore()
+const authAdmin = getAuth()
+
+// Función auxiliar: confirma que quien llama es admin, revisando su
+// propio documento en la colección usuarios (con permisos de servidor,
+// que sí pueden leer aunque las reglas normales lo bloqueen al público)
+async function verificarEsAdmin(request) {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Debes iniciar sesión.')
+  }
+  const perfilDoc = await db.collection('usuarios').doc(request.auth.uid).get()
+  if (!perfilDoc.exists || perfilDoc.data().rol !== 'admin') {
+    throw new HttpsError('permission-denied', 'Solo el administrador puede hacer esto.')
+  }
+}
+
+// ============================================
+// FUNCIÓN: crearAcceso
+// Crea un usuario nuevo (novios o wedding_planner) para una boda,
+// sin cerrar la sesión del admin que lo está creando.
+// ============================================
+exports.crearAcceso = onCall(async (request) => {
+  await verificarEsAdmin(request)
+
+  const { email, password, nombre, rol, bodaId } = request.data
+
+  if (!email || !password || !nombre || !rol || !bodaId) {
+    throw new HttpsError('invalid-argument', 'Faltan datos para crear el acceso.')
+  }
+  if (!['novios', 'wedding_planner'].includes(rol)) {
+    throw new HttpsError('invalid-argument', 'Rol inválido.')
+  }
+  if (password.length < 6) {
+    throw new HttpsError('invalid-argument', 'La contraseña debe tener al menos 6 caracteres.')
+  }
+
+  // 1. Crear el usuario en Firebase Authentication
+  const nuevoUsuario = await authAdmin.createUser({ email, password, displayName: nombre })
+
+  // 2. Crear su perfil en Firestore, con el mismo UID como ID de documento
+  await db.collection('usuarios').doc(nuevoUsuario.uid).set({
+    email,
+    nombre,
+    rol,
+    boda_id: bodaId,
+  })
+
+  return { ok: true, uid: nuevoUsuario.uid }
+})
+
+// ============================================
+// FUNCIÓN: eliminarAcceso
+// Elimina un usuario (novios/planner) tanto de Authentication como
+// de su perfil en Firestore.
+// ============================================
+exports.eliminarAcceso = onCall(async (request) => {
+  await verificarEsAdmin(request)
+
+  const { uid } = request.data
+  if (!uid) {
+    throw new HttpsError('invalid-argument', 'Falta el identificador del usuario.')
+  }
+
+  await authAdmin.deleteUser(uid)
+  await db.collection('usuarios').doc(uid).delete()
+
+  return { ok: true }
+})
 
 // ============================================
 // FUNCIÓN 1: buscarInvitado

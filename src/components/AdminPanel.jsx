@@ -3,6 +3,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
 import GestionInvitados from './GestionInvitados'
 import GestorMesas from './GestorMesas'
+import AccesosBoda from './AccesosBoda'
 
 // Colores de acento que se van alternando por boda, para que cada
 // tarjeta se distinga visualmente (igual que en la vista previa aprobada)
@@ -95,11 +96,25 @@ export default function AdminPanel() {
           >
             Mesas
           </button>
+          <button
+            onClick={() => setVista('accesos')}
+            style={{
+              fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
+              background: vista === 'accesos' ? 'var(--color-sage-light)' : 'transparent',
+              color: vista === 'accesos' ? 'var(--color-sage-text)' : 'var(--color-text-secondary)',
+            }}
+          >
+            Accesos
+          </button>
         </div>
-        {vista === 'invitados' ? (
+        {vista === 'invitados' && (
           <GestionInvitados boda={bodaSeleccionada} onVolver={() => setBodaSeleccionada(null)} />
-        ) : (
+        )}
+        {vista === 'mesas' && (
           <GestorMesas boda={bodaSeleccionada} onVolver={() => setBodaSeleccionada(null)} />
+        )}
+        {vista === 'accesos' && (
+          <AccesosBoda boda={bodaSeleccionada} />
         )}
       </div>
     )
