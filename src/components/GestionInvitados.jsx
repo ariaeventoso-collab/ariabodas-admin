@@ -22,6 +22,9 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState(null)
   const [invitadoEditando, setInvitadoEditando] = useState(null)
+  const [busqueda, setBusqueda] = useState('')
+  const [whatsappAbierto, setWhatsappAbierto] = useState(null)
+  const [mensajeWhatsapp, setMensajeWhatsapp] = useState('')
 
   useEffect(() => {
     cargarInvitados()
@@ -72,6 +75,27 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
     cargarInvitados()
   }
 
+  async function cambiarEstado(invitado, nuevoEstado) {
+    const pasesSegunEstado = {
+      confirmado: invitado.pases_asignados,
+      no_confirmado: 0,
+      pendiente: null,
+    }
+    await updateDoc(doc(db, 'bodas', boda.id, 'invitados', invitado.id), {
+      estado_rsvp: nuevoEstado,
+      pases_confirmados: pasesSegunEstado[nuevoEstado],
+      actualizado_en: new Date(),
+    })
+    cargarInvitados()
+  }
+
+  function abrirWhatsapp(invitado) {
+    if (!invitado.telefono) return
+    const numero = `${invitado.lada}${invitado.telefono}`.replace(/[^\d+]/g, '')
+    const texto = encodeURIComponent(mensajeWhatsapp)
+    window.open(`https://wa.me/${numero}?text=${texto}`, '_blank')
+  }
+
   async function agregarInvitado(e) {
     e.preventDefault()
     setError(null)
@@ -112,6 +136,9 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
   }
 
   const totalPases = invitados.reduce((acc, i) => acc + (i.pases_asignados || 0), 0)
+  const invitadosFiltrados = invitados.filter(inv =>
+    inv.nombre_familia.toLowerCase().includes(busqueda.toLowerCase())
+  )
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '2rem 1.5rem' }}>
@@ -144,6 +171,14 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
           {mostrarFormulario ? 'Cancelar' : '+ Agregar invitado'}
         </button>
       </div>
+
+      <input
+        type="text"
+        value={busqueda}
+        onChange={e => setBusqueda(e.target.value)}
+        placeholder="Buscar por nombre…"
+        style={{ ...campoEstilo, marginBottom: 14 }}
+      />
 
       {mostrarFormulario && (
         <form onSubmit={agregarInvitado} style={{
@@ -227,13 +262,13 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
 
       {!cargando && invitados.length > 0 && (
         <div style={{ background: 'var(--color-surface)', border: '0.5px solid var(--color-border)', borderRadius: 'var(--radius)' }}>
-          {invitados.map((inv, i) => (
+          {invitadosFiltrados.map((inv, i) => (
             <div key={inv.id}>
               {invitadoEditando?.id === inv.id ? (
                 <form
                   onSubmit={guardarEdicion}
                   style={{
-                    padding: '12px 16px', borderBottom: i < invitados.length - 1 ? '0.5px solid var(--color-border)' : 'none',
+                    padding: '12px 16px', borderBottom: i < invitadosFiltrados.length - 1 ? '0.5px solid var(--color-border)' : 'none',
                     background: 'var(--color-surface-muted)',
                   }}
                 >
@@ -284,33 +319,70 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
                   </div>
                 </form>
               ) : (
-                <div
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '12px 16px', borderBottom: i < invitados.length - 1 ? '0.5px solid var(--color-border)' : 'none',
-                  }}
-                >
-                  <div>
-                    <p style={{ fontSize: 14, margin: 0 }}>{inv.nombre_familia}</p>
-                    <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '2px 0 0' }}>
-                      {inv.lada} {inv.telefono || 'sin teléfono'} · {inv.pases_asignados} pases en total
-                    </p>
+                <div style={{ borderBottom: i < invitadosFiltrados.length - 1 ? '0.5px solid var(--color-border)' : 'none' }}>
+                  <div
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '12px 16px',
+                    }}
+                  >
+                    <div>
+                      <p style={{ fontSize: 14, margin: 0 }}>{inv.nombre_familia}</p>
+                      <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '2px 0 0' }}>
+                        {inv.lada} {inv.telefono || 'sin teléfono'} · {inv.pases_asignados} pases en total
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <button
+                        onClick={() => { setWhatsappAbierto(whatsappAbierto === inv.id ? null : inv.id); setMensajeWhatsapp('') }}
+                        disabled={!inv.telefono}
+                        style={{
+                          background: 'none', border: 'none', cursor: inv.telefono ? 'pointer' : 'not-allowed',
+                          color: inv.telefono ? 'var(--color-sage-text)' : 'var(--color-text-muted)', fontSize: 12,
+                        }}
+                      >
+                        WhatsApp
+                      </button>
+                      <button
+                        onClick={() => setInvitadoEditando({ ...inv })}
+                        style={{ background: 'none', border: 'none', color: 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 12 }}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => eliminarInvitado(inv)}
+                        style={{ background: 'none', border: 'none', color: 'var(--color-coral-text)', cursor: 'pointer', fontSize: 12 }}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <EstadoBadge estado={inv.estado_rsvp} />
-                    <button
-                      onClick={() => setInvitadoEditando({ ...inv })}
-                      style={{ background: 'none', border: 'none', color: 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 12 }}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => eliminarInvitado(inv)}
-                      style={{ background: 'none', border: 'none', color: 'var(--color-coral-text)', cursor: 'pointer', fontSize: 12 }}
-                    >
-                      Eliminar
-                    </button>
+
+                  {/* Botones de estado, clickeables para marcar manualmente */}
+                  <div style={{ display: 'flex', gap: 6, padding: '0 16px 12px' }}>
+                    <BotonEstado label="Pendiente" activo={inv.estado_rsvp === 'pendiente' || !inv.estado_rsvp} onClick={() => cambiarEstado(inv, 'pendiente')} tipo="pendiente" />
+                    <BotonEstado label="Confirmado" activo={inv.estado_rsvp === 'confirmado'} onClick={() => cambiarEstado(inv, 'confirmado')} tipo="confirmado" />
+                    <BotonEstado label="No va" activo={inv.estado_rsvp === 'no_confirmado'} onClick={() => cambiarEstado(inv, 'no_confirmado')} tipo="no_confirmado" />
                   </div>
+
+                  {/* Compositor de WhatsApp: mensaje libre cada vez */}
+                  {whatsappAbierto === inv.id && (
+                    <div style={{ padding: '0 16px 14px', display: 'flex', gap: 8 }}>
+                      <input
+                        type="text"
+                        value={mensajeWhatsapp}
+                        onChange={e => setMensajeWhatsapp(e.target.value)}
+                        placeholder="Escribe tu mensaje…"
+                        style={{ ...campoEstilo, flex: 1 }}
+                      />
+                      <button
+                        onClick={() => abrirWhatsapp(inv)}
+                        style={{ background: 'var(--color-sage)', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 13, whiteSpace: 'nowrap' }}
+                      >
+                        Abrir WhatsApp
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -321,19 +393,25 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
   )
 }
 
-function EstadoBadge({ estado }) {
-  const estilos = {
-    confirmado: { bg: 'var(--color-sage-light)', text: 'var(--color-sage-text)', label: 'Confirmado' },
-    no_confirmado: { bg: 'var(--color-coral-light)', text: 'var(--color-coral-text)', label: 'No va' },
-    pendiente: { bg: 'var(--color-surface-muted)', text: 'var(--color-text-secondary)', label: 'Pendiente' },
+function BotonEstado({ label, activo, onClick, tipo }) {
+  const colores = {
+    pendiente: { bg: 'var(--color-surface-muted)', text: 'var(--color-text-secondary)' },
+    confirmado: { bg: 'var(--color-sage-light)', text: 'var(--color-sage-text)' },
+    no_confirmado: { bg: 'var(--color-coral-light)', text: 'var(--color-coral-text)' },
   }
-  const s = estilos[estado] || estilos.pendiente
+  const c = colores[tipo]
   return (
-    <span style={{
-      fontSize: 12, background: s.bg, color: s.text, padding: '3px 10px', borderRadius: 20,
-    }}>
-      {s.label}
-    </span>
+    <button
+      onClick={onClick}
+      style={{
+        fontSize: 11, padding: '4px 10px', borderRadius: 20, border: 'none', cursor: 'pointer',
+        background: activo ? c.bg : 'transparent',
+        color: activo ? c.text : 'var(--color-text-muted)',
+        outline: activo ? 'none' : '0.5px solid var(--color-border)',
+      }}
+    >
+      {label}
+    </button>
   )
 }
 

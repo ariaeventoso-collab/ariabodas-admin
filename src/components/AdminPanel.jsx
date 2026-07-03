@@ -241,7 +241,7 @@ export default function AdminPanel() {
         }}>
           {bodas.map((boda, i) => {
             const acento = acentos[i % acentos.length]
-            const confirmados = boda.invitados?.filter(g => g.estado_rsvp === 'confirmado').length || 0
+            const pasesConfirmados = boda.invitados?.reduce((acc, g) => acc + (g.pases_confirmados || 0), 0) || 0
             const totalPases = boda.invitados?.reduce((acc, g) => acc + (g.pases_asignados || 0), 0) || 0
             const fecha = boda.fecha_evento?.toDate().toLocaleDateString('es-MX', {
               day: 'numeric', month: 'short', year: 'numeric',
@@ -278,7 +278,7 @@ export default function AdminPanel() {
                   display: 'flex', gap: 14, fontSize: 12, color: 'var(--color-text-secondary)',
                   borderTop: '0.5px solid var(--color-border)', paddingTop: 8,
                 }}>
-                  <span>{confirmados}/{totalPases} confirmados</span>
+                  <span>{pasesConfirmados}/{totalPases} confirmados</span>
                   <span>{boda.totalMesas} mesas</span>
                 </div>
               </div>
