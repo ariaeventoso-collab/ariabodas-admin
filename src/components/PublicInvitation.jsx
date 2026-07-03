@@ -177,20 +177,23 @@ function Countdown({ fecha, primario }) {
         dias: Math.floor(diff / 86400000),
         horas: Math.floor((diff / 3600000) % 24),
         min: Math.floor((diff / 60000) % 60),
+        seg: Math.floor((diff / 1000) % 60),
       })
     }
     actualizar()
-    const id = setInterval(actualizar, 60000)
+    const id = setInterval(actualizar, 1000)
     return () => clearInterval(id)
   }, [fecha])
 
   if (!restante) return null
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', gap: 24, padding: '0 1.5rem 2.5rem', fontFamily: 'Inter, sans-serif' }}>
-      {[['días', restante.dias], ['hrs', restante.horas], ['min', restante.min]].map(([label, val]) => (
-        <div key={label} style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: 26, fontWeight: 600, color: primario, margin: 0 }}>{val}</p>
+    <div style={{ display: 'flex', justifyContent: 'center', gap: 20, padding: '0 1.5rem 2.5rem', fontFamily: 'Inter, sans-serif' }}>
+      {[['días', restante.dias], ['hrs', restante.horas], ['min', restante.min], ['seg', restante.seg]].map(([label, val]) => (
+        <div key={label} style={{ textAlign: 'center', minWidth: 40 }}>
+          <p style={{ fontSize: 26, fontWeight: 600, color: primario, margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+            {String(val).padStart(2, '0')}
+          </p>
           <p style={{ fontSize: 11, color: '#999', margin: 0, textTransform: 'uppercase', letterSpacing: 1 }}>{label}</p>
         </div>
       ))}
@@ -233,28 +236,43 @@ function BuscadorRSVP({ boda, primario, claro }) {
   const [confirmado, setConfirmado] = useState(false)
   const [error, setError] = useState(null)
 
-  async function buscar(e) {
-    e.preventDefault()
-    if (!busqueda.trim()) return
-    setBuscando(true)
-    setError(null)
-    setResultados(null)
-    setSeleccionado(null)
-
-    try {
-      const fn = httpsCallable(functions, 'buscarInvitado')
-      const res = await fn({ bodaSlug: boda.slug, nombreBusqueda: busqueda.trim() })
-      setResultados(res.data.resultados)
-    } catch (e) {
-      setError('No se pudo buscar. Intenta de nuevo.')
+  // Búsqueda en vivo: espera un momento después de que dejas de escribir
+  // (para no mandar una búsqueda por cada letra) y busca sola.
+  useEffect(() => {
+    if (seleccionado) return
+    if (!busqueda.trim()) {
+      setResultados(null)
+      return
     }
-    setBuscando(false)
-  }
+
+    const espera = setTimeout(async () => {
+      setBuscando(true)
+      setError(null)
+      try {
+        const fn = httpsCallable(functions, 'buscarInvitado')
+        const res = await fn({ bodaSlug: boda.slug, nombreBusqueda: busqueda.trim() })
+        setResultados(res.data.resultados)
+      } catch (e) {
+        setError('No se pudo buscar. Intenta de nuevo.')
+      }
+      setBuscando(false)
+    }, 350)
+
+    return () => clearTimeout(espera)
+  }, [busqueda, seleccionado])
 
   function elegir(inv) {
     setSeleccionado(inv)
+    setBusqueda(inv.nombre_familia)
+    setResultados(null)
     setPases(inv.pases_asignados)
     setConfirmado(false)
+  }
+
+  function reiniciarBusqueda() {
+    setSeleccionado(null)
+    setBusqueda('')
+    setResultados(null)
   }
 
   async function confirmar(pasesFinal) {
@@ -274,54 +292,66 @@ function BuscadorRSVP({ boda, primario, claro }) {
     <div style={{ padding: '0 1.5rem 2.5rem' }}>
       <TituloSeccion texto="Confirma tu asistencia" primario={primario} />
 
-      {!seleccionado && (
-        <form onSubmit={buscar} style={{ display: 'flex', gap: 8 }}>
+      {!confirmado && (
+        <div style={{ position: 'relative' }}>
           <input
-            type="text" value={busqueda} onChange={e => setBusqueda(e.target.value)}
-            placeholder="Busca tu nombre o familia"
-            style={{ flex: 1, padding: '10px 12px', border: `1px solid ${primario}`, borderRadius: 8, fontSize: 14, fontFamily: 'Inter, sans-serif' }}
+            type="text"
+            value={busqueda}
+            onChange={e => {
+              setBusqueda(e.target.value)
+              if (seleccionado) setSeleccionado(null)
+            }}
+            placeholder="Escribe tu nombre o familia"
+            style={{ width: '100%', padding: '10px 12px', border: `1px solid ${primario}`, borderRadius: 8, fontSize: 14, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' }}
           />
-          <button type="submit" disabled={buscando} style={{ background: primario, color: '#fff', border: 'none', borderRadius: 8, padding: '10px 18px', fontSize: 14 }}>
-            {buscando ? '...' : 'Buscar'}
-          </button>
-        </form>
+
+          {/* Dropdown de resultados en vivo, aparece flotando debajo del campo */}
+          {!seleccionado && busqueda.trim() && (
+            <div style={{
+              position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4,
+              background: '#fff', border: `1px solid ${primario}55`, borderRadius: 8,
+              boxShadow: '0 6px 16px rgba(0,0,0,0.08)', zIndex: 10, overflow: 'hidden',
+            }}>
+              {buscando && (
+                <p style={{ padding: '10px 14px', fontSize: 13, color: '#999', margin: 0, fontFamily: 'Inter, sans-serif' }}>Buscando…</p>
+              )}
+              {!buscando && resultados?.length === 0 && (
+                <p style={{ padding: '10px 14px', fontSize: 13, color: '#999', margin: 0, fontFamily: 'Inter, sans-serif' }}>
+                  No encontramos ese nombre.
+                </p>
+              )}
+              {!buscando && resultados?.map(r => (
+                <button
+                  key={r.invitado_id} onClick={() => elegir(r)}
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'left', padding: '10px 14px',
+                    background: '#fff', border: 'none', borderBottom: '0.5px solid #eee', fontSize: 15,
+                    fontFamily: "'Cormorant Garamond', serif", cursor: 'pointer',
+                  }}
+                >
+                  {r.nombre_familia}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {error && <p style={{ fontSize: 13, color: '#a33', marginTop: 10 }}>{error}</p>}
-
-      {resultados && resultados.length === 0 && !seleccionado && (
-        <p style={{ fontSize: 13, color: '#999', marginTop: 12, fontFamily: 'Inter, sans-serif' }}>
-          No encontramos ese nombre. Intenta con otra parte del nombre.
-        </p>
-      )}
-
-      {resultados && resultados.length > 0 && !seleccionado && (
-        <div style={{ marginTop: 12 }}>
-          {resultados.map(r => (
-            <button
-              key={r.invitado_id} onClick={() => elegir(r)}
-              style={{
-                display: 'block', width: '100%', textAlign: 'left', padding: '10px 14px',
-                background: '#fff', border: `1px solid ${primario}55`, borderRadius: 8, marginBottom: 8, fontSize: 15,
-                fontFamily: "'Cormorant Garamond', serif",
-              }}
-            >
-              {r.nombre_familia}
-            </button>
-          ))}
-        </div>
-      )}
 
       {seleccionado && !confirmado && (
         <div style={{ background: '#fff', border: `1px solid ${primario}55`, borderRadius: 10, padding: 18, marginTop: 12 }}>
           <p style={{ fontSize: 12, color: '#999', textTransform: 'uppercase', letterSpacing: 1, fontFamily: 'Inter, sans-serif', margin: '0 0 4px' }}>
             {seleccionado.nombre_familia}
           </p>
-          <p style={{ fontSize: 18, margin: '0 0 16px' }}>
-            Hemos reservado <strong style={{ color: primario }}>{seleccionado.pases_asignados}</strong> {seleccionado.pases_asignados === 1 ? 'pase' : 'pases'} para ustedes
+          <p style={{ fontSize: 18, margin: '0 0 4px' }}>
+            Su grupo cuenta con <strong style={{ color: primario }}>{seleccionado.pases_asignados}</strong> {seleccionado.pases_asignados === 1 ? 'lugar' : 'lugares'} en total
+          </p>
+          <p style={{ fontSize: 12, color: '#999', fontFamily: 'Inter, sans-serif', margin: '0 0 16px' }}>
+            (Incluyendo a {seleccionado.nombre_familia})
           </p>
 
-          <label style={{ fontSize: 13, color: '#6b6b63', fontFamily: 'Inter, sans-serif' }}>¿Cuántos asistirán?</label>
+          <label style={{ fontSize: 13, color: '#6b6b63', fontFamily: 'Inter, sans-serif' }}>¿Cuántos asistirán en total?</label>
           <select
             value={pases} onChange={e => setPases(Number(e.target.value))}
             style={{ display: 'block', width: '100%', padding: '8px 10px', marginTop: 4, marginBottom: 14, border: `1px solid ${primario}55`, borderRadius: 8, fontSize: 14, fontFamily: 'Inter, sans-serif' }}
@@ -338,7 +368,7 @@ function BuscadorRSVP({ boda, primario, claro }) {
             {enviando ? 'Enviando…' : 'Confirmar'}
           </button>
           <button
-            onClick={() => setSeleccionado(null)}
+            onClick={reiniciarBusqueda}
             style={{ width: '100%', background: 'transparent', color: '#999', border: 'none', fontSize: 13, fontFamily: 'Inter, sans-serif' }}
           >
             No soy yo, buscar de nuevo

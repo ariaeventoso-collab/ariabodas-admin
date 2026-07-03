@@ -175,7 +175,7 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
               </select>
             </div>
             <div>
-              <label style={etiquetaEstilo}>Pases</label>
+              <label style={etiquetaEstilo}>Pases en total</label>
               <input
                 type="number"
                 min="1"
