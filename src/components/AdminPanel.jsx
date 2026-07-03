@@ -7,6 +7,7 @@ import AccesosBoda from './AccesosBoda'
 import DisenoBoda from './DisenoBoda'
 import CrearBoda from './CrearBoda'
 import MensajesBoda from './MensajesBoda'
+import CRMWhatsapp from './CRMWhatsapp'
 
 // Colores de acento que se van alternando por boda, para que cada
 // tarjeta se distinga visualmente (igual que en la vista previa aprobada)
@@ -117,6 +118,16 @@ export default function AdminPanel() {
             Invitados
           </button>
           <button
+            onClick={() => setVista('crm')}
+            style={{
+              fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
+              background: vista === 'crm' ? 'var(--color-sage-light)' : 'transparent',
+              color: vista === 'crm' ? 'var(--color-sage-text)' : 'var(--color-text-secondary)',
+            }}
+          >
+            CRM
+          </button>
+          <button
             onClick={() => setVista('mesas')}
             style={{
               fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
@@ -159,6 +170,9 @@ export default function AdminPanel() {
         </div>
         {vista === 'invitados' && (
           <GestionInvitados boda={bodaSeleccionada} ocultarVolver />
+        )}
+        {vista === 'crm' && (
+          <CRMWhatsapp boda={bodaSeleccionada} />
         )}
         {vista === 'mesas' && (
           <GestorMesas boda={bodaSeleccionada} ocultarVolver />

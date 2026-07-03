@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, orderBy, query } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
+import ImportarExcel from './ImportarExcel'
 
 const LADAS = [
   { codigo: '+52', pais: 'México' },
@@ -14,6 +15,7 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
   const [invitados, setInvitados] = useState([])
   const [cargando, setCargando] = useState(true)
   const [mostrarFormulario, setMostrarFormulario] = useState(false)
+  const [mostrarImportar, setMostrarImportar] = useState(false)
 
   const [nombreFamilia, setNombreFamilia] = useState('')
   const [telefono, setTelefono] = useState('')
@@ -22,6 +24,7 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState(null)
   const [invitadoEditando, setInvitadoEditando] = useState(null)
+  const [avisoCambioPases, setAvisoCambioPases] = useState(null)
   const [busqueda, setBusqueda] = useState('')
   const [whatsappAbierto, setWhatsappAbierto] = useState(null)
   const [mensajeWhatsapp, setMensajeWhatsapp] = useState('')
@@ -43,13 +46,24 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
     e.preventDefault()
     if (!invitadoEditando.nombre_familia.trim()) return
 
+    const original = invitados.find(i => i.id === invitadoEditando.id)
+    const pasesNuevos = Number(invitadoEditando.pases_asignados)
+    const cambioDePases = original && original.pases_asignados !== pasesNuevos
+
     await updateDoc(doc(db, 'bodas', boda.id, 'invitados', invitadoEditando.id), {
       nombre_familia: invitadoEditando.nombre_familia.trim(),
       telefono: invitadoEditando.telefono.trim(),
       lada: invitadoEditando.lada,
-      pases_asignados: Number(invitadoEditando.pases_asignados),
+      pases_asignados: pasesNuevos,
       actualizado_en: new Date(),
     })
+
+    if (cambioDePases) {
+      setAvisoCambioPases(
+        `Cambiaste el número de pases de ${invitadoEditando.nombre_familia} (de ${original.pases_asignados} a ${pasesNuevos}). Recuerda avisarle directamente para que no se entere hasta el día del evento.`
+      )
+    }
+
     setInvitadoEditando(null)
     cargarInvitados()
   }
@@ -161,16 +175,35 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>Invitados</span>
-        <button
-          onClick={() => setMostrarFormulario(!mostrarFormulario)}
-          style={{
-            fontSize: 13, background: 'var(--color-sage)', color: '#fff', border: 'none',
-            borderRadius: 8, padding: '6px 14px',
-          }}
-        >
-          {mostrarFormulario ? 'Cancelar' : '+ Agregar invitado'}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => setMostrarImportar(!mostrarImportar)}
+            style={{
+              fontSize: 13, background: 'transparent', border: '0.5px solid var(--color-border)',
+              borderRadius: 8, padding: '6px 14px', color: 'var(--color-text-secondary)',
+            }}
+          >
+            Importar Excel
+          </button>
+          <button
+            onClick={() => setMostrarFormulario(!mostrarFormulario)}
+            style={{
+              fontSize: 13, background: 'var(--color-sage)', color: '#fff', border: 'none',
+              borderRadius: 8, padding: '6px 14px',
+            }}
+          >
+            {mostrarFormulario ? 'Cancelar' : '+ Agregar invitado'}
+          </button>
+        </div>
       </div>
+
+      {mostrarImportar && (
+        <ImportarExcel
+          boda={boda}
+          onTerminado={() => { setMostrarImportar(false); cargarInvitados() }}
+          onCancelar={() => setMostrarImportar(false)}
+        />
+      )}
 
       <input
         type="text"
@@ -179,6 +212,22 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
         placeholder="Buscar por nombre…"
         style={{ ...campoEstilo, marginBottom: 14 }}
       />
+
+      {avisoCambioPases && (
+        <div style={{
+          background: 'var(--color-coral-light)', color: 'var(--color-coral-text)',
+          borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 13,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10,
+        }}>
+          <span>{avisoCambioPases}</span>
+          <button
+            onClick={() => setAvisoCambioPases(null)}
+            style={{ background: 'none', border: 'none', color: 'var(--color-coral-text)', cursor: 'pointer', fontSize: 13, flexShrink: 0 }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {mostrarFormulario && (
         <form onSubmit={agregarInvitado} style={{

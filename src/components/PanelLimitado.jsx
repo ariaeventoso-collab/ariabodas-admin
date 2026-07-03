@@ -5,6 +5,7 @@ import { db, auth } from '../lib/firebaseClient'
 import GestionInvitados from './GestionInvitados'
 import GestorMesas from './GestorMesas'
 import MensajesBoda from './MensajesBoda'
+import CRMWhatsapp from './CRMWhatsapp'
 
 // Panel para novios y wedding planners: acceso solo a SU boda,
 // sin lista de otras bodas y sin poder editar el diseño de la invitación.
@@ -108,6 +109,18 @@ export default function PanelLimitado({ perfilUsuario }) {
         >
           Invitados
         </button>
+        {esPlanner && (
+          <button
+            onClick={() => setVista('crm')}
+            style={{
+              fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
+              background: vista === 'crm' ? 'var(--color-sage-light)' : 'transparent',
+              color: vista === 'crm' ? 'var(--color-sage-text)' : 'var(--color-text-secondary)',
+            }}
+          >
+            CRM
+          </button>
+        )}
         <button
           onClick={() => setVista('mesas')}
           style={{
@@ -124,6 +137,7 @@ export default function PanelLimitado({ perfilUsuario }) {
         <div style={{ paddingTop: '1.5rem' }}><MensajesBoda boda={boda} /></div>
       )}
       {vista === 'invitados' && <GestionInvitados boda={boda} ocultarVolver />}
+      {vista === 'crm' && esPlanner && <div style={{ paddingTop: '1.5rem' }}><CRMWhatsapp boda={boda} /></div>}
       {vista === 'mesas' && <GestorMesas boda={boda} ocultarVolver />}
     </div>
   )
