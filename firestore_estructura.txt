@@ -1,0 +1,49 @@
+ARIABODAS - ESTRUCTURA DE FIRESTORE
+=====================================
+Esto reemplaza el esquema SQL. Firestore no usa tablas, usa
+colecciones (como carpetas) y documentos (como archivos dentro
+de esas carpetas). Así queda organizado:
+
+bodas (colección)
+  └── {bodaId} (documento)
+        nombre_novio_1: string
+        nombre_novio_2: string
+        slug: string              -> lo que va en el link: ariabodas.com/pedroymaria
+        ciudad: string
+        estado: string
+        fecha_evento: timestamp
+        colores: { primario, secundario, acento }
+        imagen_fondo_url: string
+        activa: boolean
+        creada_en: timestamp
+
+        invitados (subcolección)
+          └── {invitadoId} (documento)
+                nombre_familia: string      -> ej. "Fam. Cabral López"
+                telefono: string
+                lada: string                 -> default "+52"
+                pases_asignados: number      -> el tope que dieron los novios
+                pases_confirmados: number    -> null = pendiente
+                estado_rsvp: "pendiente" | "confirmado" | "no_confirmado"
+                actualizado_en: timestamp
+
+        mesas (subcolección)
+          └── {mesaId} (documento)
+                nombre: string               -> ej. "Mesa 1"
+                capacidad: number
+                asignaciones: array de objetos
+                  [{ invitado_id, nombre_familia, lugares_ocupados }]
+                  (aquí SÍ guardamos la lista directo en la mesa,
+                   en vez de otra subcolección, porque son pocos
+                   datos y así es más simple de leer de un jalón)
+
+usuarios (colección, separada de bodas)
+  └── {usuarioId} (documento, mismo ID que el usuario de Firebase Auth)
+        email: string
+        nombre: string
+        rol: "admin" | "novios" | "wedding_planner"
+        boda_id: string   -> a qué boda pertenece (vacío si es admin)
+
+REGLA IMPORTANTE (igual que antes, ahora se aplica en Cloud Functions):
+Si pases_confirmados de un invitado cambia y ya estaba en el array
+"asignaciones" de alguna mesa, se debe quitar de ahí automáticamente.
