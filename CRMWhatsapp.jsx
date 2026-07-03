@@ -145,8 +145,11 @@ export default function CRMWhatsapp({ boda }) {
           marginBottom: 4, resize: 'vertical',
         }}
       />
-      <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 8 }}>
+      <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 2 }}>
         *así* = negrita · _así_ = cursiva · ~así~ = tachado — se aplican solas si pegas texto ya formateado
+      </p>
+      <p style={{ fontSize: 10, color: 'var(--color-text-muted)', opacity: 0.7, marginBottom: 8 }}>
+        Los emojis pegados de otras apps a veces no se copian bien — para mayor seguridad, usa el selector de emojis de tu teclado.
       </p>
       <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 16 }}>
         {conTelefono.length} {conTelefono.length === 1 ? 'persona' : 'personas'} en este grupo
