@@ -8,12 +8,12 @@ import { getAuth } from 'firebase/auth'
 // completo y lo pegas aquí abajo, reemplazando estos valores de ejemplo.
 
 const firebaseConfig = {
-  apiKey: 'PEGA_AQUI_TU_API_KEY',
-  authDomain: 'PEGA_AQUI_TU_AUTH_DOMAIN',
-  projectId: 'PEGA_AQUI_TU_PROJECT_ID',
-  storageBucket: 'PEGA_AQUI_TU_STORAGE_BUCKET',
-  messagingSenderId: 'PEGA_AQUI_TU_SENDER_ID',
-  appId: 'PEGA_AQUI_TU_APP_ID',
+  apiKey: 'AIzaSyApppfMcuD1t_CoILDecwK7DnMHp89g2E4',
+  authDomain: 'ariabodas-admin.firebaseapp.com',
+  projectId: 'ariabodas-admin',
+  storageBucket: 'ariabodas-admin.firebasestorage.app',
+  messagingSenderId: '725357936875',
+  appId: '1:725357936875:web:788cf3eaf2ca35d165feae',
 }
 
 const app = initializeApp(firebaseConfig)
