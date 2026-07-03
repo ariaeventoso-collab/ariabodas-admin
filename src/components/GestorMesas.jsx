@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
 
-export default function GestorMesas({ boda, onVolver }) {
+export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
   const [invitados, setInvitados] = useState([])
   const [mesas, setMesas] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -116,12 +116,14 @@ export default function GestorMesas({ boda, onVolver }) {
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '2rem 1.5rem' }}>
 
-      <button
-        onClick={onVolver}
-        style={{ fontSize: 13, background: 'transparent', border: 'none', color: 'var(--color-text-secondary)', padding: 0, marginBottom: 16, cursor: 'pointer' }}
-      >
-        ← Volver a tus bodas
-      </button>
+      {!ocultarVolver && (
+        <button
+          onClick={onVolver}
+          style={{ fontSize: 13, background: 'transparent', border: 'none', color: 'var(--color-text-secondary)', padding: 0, marginBottom: 16, cursor: 'pointer' }}
+        >
+          ← Volver a tus bodas
+        </button>
+      )}
 
       <p style={{ fontFamily: 'var(--font-display)', fontSize: 24, margin: '0 0 4px' }}>
         Gestor de mesas — {boda.nombre_novio_1} &amp; {boda.nombre_novio_2}

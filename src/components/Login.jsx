@@ -33,12 +33,7 @@ export default function Login({ onLoginExitoso }) {
         borderRadius: 'var(--radius)', padding: '2rem', width: '100%', maxWidth: 360,
       }}>
         <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <div style={{
-            background: '#1E1E1C', borderRadius: 10, padding: '14px 20px',
-            display: 'inline-flex', margin: '0 auto 14px',
-          }}>
-            <img src="/logo-aria.png" alt="Aria Eventos" style={{ height: 40, width: 'auto', display: 'block' }} />
-          </div>
+          <img src="/logo-aria.png" alt="Aria Eventos" style={{ height: 48, width: 'auto', margin: '0 auto 8px', display: 'block' }} />
           <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
             Panel administrativo
           </p>

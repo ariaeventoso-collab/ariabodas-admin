@@ -10,7 +10,7 @@ const LADAS = [
   { codigo: '+54', pais: 'Argentina' },
 ]
 
-export default function GestionInvitados({ boda, onVolver }) {
+export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
   const [invitados, setInvitados] = useState([])
   const [cargando, setCargando] = useState(true)
   const [mostrarFormulario, setMostrarFormulario] = useState(false)
@@ -116,15 +116,17 @@ export default function GestionInvitados({ boda, onVolver }) {
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '2rem 1.5rem' }}>
 
-      <button
-        onClick={onVolver}
-        style={{
-          fontSize: 13, background: 'transparent', border: 'none',
-          color: 'var(--color-text-secondary)', padding: 0, marginBottom: 16, cursor: 'pointer',
-        }}
-      >
-        ← Volver a tus bodas
-      </button>
+      {!ocultarVolver && (
+        <button
+          onClick={onVolver}
+          style={{
+            fontSize: 13, background: 'transparent', border: 'none',
+            color: 'var(--color-text-secondary)', padding: 0, marginBottom: 16, cursor: 'pointer',
+          }}
+        >
+          ← Volver a tus bodas
+        </button>
+      )}
 
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4 }}>
         <p style={{ fontFamily: 'var(--font-display)', fontSize: 24, margin: 0 }}>
