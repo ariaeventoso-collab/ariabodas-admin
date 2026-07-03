@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { collection, getDocs, query, where } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
 import GestionInvitados from './GestionInvitados'
+import GestorMesas from './GestorMesas'
 
 // Colores de acento que se van alternando por boda, para que cada
 // tarjeta se distinga visualmente (igual que en la vista previa aprobada)
@@ -21,6 +22,7 @@ export default function AdminPanel() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
   const [bodaSeleccionada, setBodaSeleccionada] = useState(null)
+  const [vista, setVista] = useState('invitados')
 
   useEffect(() => {
     cargarBodas()
@@ -70,7 +72,37 @@ export default function AdminPanel() {
   )
 
   if (bodaSeleccionada) {
-    return <GestionInvitados boda={bodaSeleccionada} onVolver={() => setBodaSeleccionada(null)} />
+    return (
+      <div>
+        <div style={{ display: 'flex', gap: 8, maxWidth: 720, margin: '1.5rem auto -1.5rem', padding: '0 1.5rem' }}>
+          <button
+            onClick={() => setVista('invitados')}
+            style={{
+              fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
+              background: vista === 'invitados' ? 'var(--color-sage-light)' : 'transparent',
+              color: vista === 'invitados' ? 'var(--color-sage-text)' : 'var(--color-text-secondary)',
+            }}
+          >
+            Invitados
+          </button>
+          <button
+            onClick={() => setVista('mesas')}
+            style={{
+              fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
+              background: vista === 'mesas' ? 'var(--color-sage-light)' : 'transparent',
+              color: vista === 'mesas' ? 'var(--color-sage-text)' : 'var(--color-text-secondary)',
+            }}
+          >
+            Mesas
+          </button>
+        </div>
+        {vista === 'invitados' ? (
+          <GestionInvitados boda={bodaSeleccionada} onVolver={() => setBodaSeleccionada(null)} />
+        ) : (
+          <GestorMesas boda={bodaSeleccionada} onVolver={() => setBodaSeleccionada(null)} />
+        )}
+      </div>
+    )
   }
 
   return (
@@ -146,7 +178,7 @@ export default function AdminPanel() {
             return (
               <div
                 key={boda.id}
-                onClick={() => setBodaSeleccionada(boda)}
+                onClick={() => { setBodaSeleccionada(boda); setVista('invitados') }}
                 style={{
                   background: 'var(--color-surface)', border: '0.5px solid var(--color-border)',
                   borderRadius: 'var(--radius)', padding: '1rem 1.1rem', cursor: 'pointer',
