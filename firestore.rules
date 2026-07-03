@@ -39,13 +39,18 @@ service cloud.firestore {
     // ============================================
     match /bodas/{bodaId} {
 
-      // Ver la boda: admin ve todas, novios/planner solo la suya
-      allow read: if esAdmin() || esDeEstaBoda(bodaId);
+      // Ver la boda: público en general puede leer datos básicos para
+      // mostrar la invitación (nombres, fecha, diseño). Esto es
+      // intencional: la invitación debe ser accesible sin iniciar sesión.
+      allow read: if true;
 
       // Editar el diseño de la boda: SOLO admin (como definimos con Jorge)
       allow write: if esAdmin();
 
       // -------- Subcolección: invitados --------
+      // NO se permite lectura/escritura pública directa aquí.
+      // El público interactúa solo a través de las Cloud Functions
+      // buscarInvitado y confirmarRSVP, que usan permisos de servidor.
       match /invitados/{invitadoId} {
         allow read: if esAdmin() || esDeEstaBoda(bodaId);
         allow write: if esAdmin() || esDeEstaBoda(bodaId);

@@ -75,7 +75,15 @@ export default function AdminPanel() {
   if (bodaSeleccionada) {
     return (
       <div>
-        <div style={{ display: 'flex', gap: 8, maxWidth: 720, margin: '1.5rem auto -1.5rem', padding: '0 1.5rem' }}>
+        <div style={{ maxWidth: 720, margin: '1.5rem auto -0.75rem', padding: '0 1.5rem' }}>
+          <a
+            href={`/i/${bodaSeleccionada.slug}`} target="_blank" rel="noreferrer"
+            style={{ fontSize: 12, color: 'var(--color-sage-text)', fontFamily: 'var(--font-sans)' }}
+          >
+            Ver invitación pública →
+          </a>
+        </div>
+        <div style={{ display: 'flex', gap: 8, maxWidth: 720, margin: '0.5rem auto -1.5rem', padding: '0 1.5rem' }}>
           <button
             onClick={() => setVista('invitados')}
             style={{

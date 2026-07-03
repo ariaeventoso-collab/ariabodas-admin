@@ -6,7 +6,7 @@ import AdminPanel from './components/AdminPanel'
 import PanelLimitado from './components/PanelLimitado'
 import Login from './components/Login'
 
-export default function App() {
+export default function AdminApp() {
   const [usuario, setUsuario] = useState(undefined) // undefined = verificando, null = sin sesión
   const [perfilUsuario, setPerfilUsuario] = useState(undefined) // undefined = cargando, null = no encontrado
 
