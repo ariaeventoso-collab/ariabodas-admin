@@ -470,12 +470,15 @@ function BotonEstado({ label, activo, onClick, tipo }) {
     <button
       onClick={onClick}
       style={{
-        fontSize: 11, padding: '4px 10px', borderRadius: 20, border: 'none', cursor: 'pointer',
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase',
+        padding: '4px 12px', borderRadius: 20, border: 'none', cursor: 'pointer',
         background: activo ? c.bg : 'transparent',
         color: activo ? c.text : 'var(--color-text-muted)',
         outline: activo ? 'none' : '0.5px solid var(--color-border)',
       }}
     >
+      {activo && <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor', opacity: 0.7 }} />}
       {label}
     </button>
   )

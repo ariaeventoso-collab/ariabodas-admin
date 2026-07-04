@@ -106,67 +106,13 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, maxWidth: 720, margin: '0 auto 1.5rem', padding: '0 1.5rem' }}>
-          <button
-            onClick={() => setVista('invitados')}
-            style={{
-              fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
-              background: vista === 'invitados' ? 'var(--color-sage-light)' : 'transparent',
-              color: vista === 'invitados' ? 'var(--color-sage-text)' : 'var(--color-text-secondary)',
-            }}
-          >
-            Invitados
-          </button>
-          <button
-            onClick={() => setVista('crm')}
-            style={{
-              fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
-              background: vista === 'crm' ? 'var(--color-sage-light)' : 'transparent',
-              color: vista === 'crm' ? 'var(--color-sage-text)' : 'var(--color-text-secondary)',
-            }}
-          >
-            CRM
-          </button>
-          <button
-            onClick={() => setVista('mesas')}
-            style={{
-              fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
-              background: vista === 'mesas' ? 'var(--color-sage-light)' : 'transparent',
-              color: vista === 'mesas' ? 'var(--color-sage-text)' : 'var(--color-text-secondary)',
-            }}
-          >
-            Mesas
-          </button>
-          <button
-            onClick={() => setVista('mensajes')}
-            style={{
-              fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
-              background: vista === 'mensajes' ? 'var(--color-sage-light)' : 'transparent',
-              color: vista === 'mensajes' ? 'var(--color-sage-text)' : 'var(--color-text-secondary)',
-            }}
-          >
-            Mensajes
-          </button>
-          <button
-            onClick={() => setVista('accesos')}
-            style={{
-              fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
-              background: vista === 'accesos' ? 'var(--color-sage-light)' : 'transparent',
-              color: vista === 'accesos' ? 'var(--color-sage-text)' : 'var(--color-text-secondary)',
-            }}
-          >
-            Accesos
-          </button>
-          <button
-            onClick={() => setVista('diseno')}
-            style={{
-              fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
-              background: vista === 'diseno' ? 'var(--color-sage-light)' : 'transparent',
-              color: vista === 'diseno' ? 'var(--color-sage-text)' : 'var(--color-text-secondary)',
-            }}
-          >
-            Diseño
-          </button>
+        <div style={{ display: 'flex', gap: 4, maxWidth: 720, margin: '0 auto 1.5rem', padding: '0 1.5rem', borderBottom: '0.5px solid var(--color-border)' }}>
+          <TabBoton activo={vista === 'invitados'} onClick={() => setVista('invitados')}>Invitados</TabBoton>
+          <TabBoton activo={vista === 'crm'} onClick={() => setVista('crm')}>CRM</TabBoton>
+          <TabBoton activo={vista === 'mesas'} onClick={() => setVista('mesas')}>Mesas</TabBoton>
+          <TabBoton activo={vista === 'mensajes'} onClick={() => setVista('mensajes')}>Mensajes</TabBoton>
+          <TabBoton activo={vista === 'accesos'} onClick={() => setVista('accesos')}>Accesos</TabBoton>
+          <TabBoton activo={vista === 'diseno'} onClick={() => setVista('diseno')}>Diseño</TabBoton>
         </div>
         {vista === 'invitados' && (
           <GestionInvitados boda={bodaSeleccionada} ocultarVolver />
@@ -326,6 +272,27 @@ export default function AdminPanel() {
         </div>
       )}
     </div>
+  )
+}
+
+function TabBoton({ activo, onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        position: 'relative', fontSize: 13, padding: '10px 14px', background: 'transparent',
+        border: 'none', color: activo ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
+        transition: 'color .15s',
+      }}
+    >
+      {children}
+      {activo && (
+        <span style={{
+          position: 'absolute', left: 10, right: 10, bottom: -1, height: 2,
+          background: 'var(--color-coral)',
+        }} />
+      )}
+    </button>
   )
 }
 
