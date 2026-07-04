@@ -170,10 +170,10 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
   const totalPases = invitados.reduce((acc, i) => acc + (i.pases_asignados || 0), 0)
 
   const conteos = {
-    todos: invitados.length,
-    confirmado: invitados.filter(i => i.estado_rsvp === 'confirmado').length,
-    no_confirmado: invitados.filter(i => i.estado_rsvp === 'no_confirmado').length,
-    pendiente: invitados.filter(i => i.estado_rsvp === 'pendiente' || !i.estado_rsvp).length,
+    todos: totalPases,
+    confirmado: invitados.reduce((s, i) => i.estado_rsvp === 'confirmado' ? s + (i.pases_confirmados || 0) : s, 0),
+    no_confirmado: invitados.reduce((s, i) => i.estado_rsvp === 'no_confirmado' ? s + (i.pases_asignados || 0) : s, 0),
+    pendiente: invitados.reduce((s, i) => (i.estado_rsvp === 'pendiente' || !i.estado_rsvp) ? s + (i.pases_asignados || 0) : s, 0),
   }
 
   const invitadosFiltrados = invitados
