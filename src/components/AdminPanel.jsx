@@ -27,6 +27,36 @@ export default function AdminPanel() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
   const [bodaSeleccionada, setBodaSeleccionada] = useState(null)
+
+  // Cuando entras al detalle de una boda, registramos un paso en el
+  // historial del navegador. Así, si el usuario presiona "atrás", en vez
+  // de salir de la app (porque React no usa rutas reales aquí), lo regresamos
+  // a la lista de bodas. Si ya estaba en la lista, "atrás" se comporta normal
+  // (sale de la app, que es lo esperado en la pantalla raíz).
+  useEffect(() => {
+    function alPresionarAtras() {
+      setBodaSeleccionada(null)
+    }
+    window.addEventListener('popstate', alPresionarAtras)
+    return () => window.removeEventListener('popstate', alPresionarAtras)
+  }, [])
+
+  function abrirBoda(boda) {
+    window.history.pushState({ vista: 'detalle-boda' }, '')
+    setBodaSeleccionada(boda)
+    setVista('invitados')
+  }
+
+  function volverALaLista() {
+    // Si hay una entrada de historial nuestra pendiente, la consumimos con
+    // "atrás" real para no acumular entradas fantasma; si no, solo limpiamos
+    // el estado (ej. cuando se llega aquí por click en el logo).
+    if (window.history.state?.vista === 'detalle-boda') {
+      window.history.back()
+    } else {
+      setBodaSeleccionada(null)
+    }
+  }
   const [vista, setVista] = useState('invitados')
   const [mostrarCrearBoda, setMostrarCrearBoda] = useState(false)
 
@@ -95,12 +125,15 @@ export default function AdminPanel() {
       <div>
         {/* Logo persistente en todas las pestañas */}
         <div style={{ padding: '1.5rem 1.5rem 0' }}>
-          <img src="/logo-aria.png" alt="Aria Eventos" style={{ height: 26, width: 'auto' }} />
+          <img
+            src="/logo-aria.png" alt="Aria Eventos" style={{ height: 26, width: 'auto', cursor: 'pointer' }}
+            onClick={volverALaLista}
+          />
         </div>
 
         <div style={{ maxWidth: 720, margin: '1rem auto 0', padding: '0 1.5rem' }}>
           <button
-            onClick={() => setBodaSeleccionada(null)}
+            onClick={volverALaLista}
             style={{ fontSize: 13, background: 'transparent', border: 'none', color: 'var(--color-text-secondary)', padding: 0, marginBottom: 12, cursor: 'pointer' }}
           >
             ← Volver a tus bodas
@@ -231,7 +264,7 @@ export default function AdminPanel() {
             return (
               <div
                 key={boda.id}
-                onClick={() => { setBodaSeleccionada(boda); setVista('invitados') }}
+                onClick={() => abrirBoda(boda)}
                 style={{
                   background: 'var(--color-surface)', border: '0.5px solid var(--color-border)',
                   borderRadius: 14, padding: '1.1rem 1.15rem', cursor: 'pointer',

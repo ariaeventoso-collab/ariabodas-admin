@@ -71,7 +71,10 @@ export default function PanelLimitado({ perfilUsuario }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '1rem 1.5rem', borderBottom: '0.5px solid var(--color-border)', marginBottom: '1.5rem',
       }}>
-        <img src="/logo-aria.png" alt="Aria Eventos" style={{ height: 26, width: 'auto' }} />
+        <img
+          src="/logo-aria.png" alt="Aria Eventos" style={{ height: 26, width: 'auto', cursor: 'pointer' }}
+          onClick={() => setVista(esPlanner ? 'invitados' : 'mensajes')}
+        />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
             {esPlanner ? 'Wedding planner' : 'Novios'} · {boda.nombre_novio_1} &amp; {boda.nombre_novio_2}
