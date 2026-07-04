@@ -225,14 +225,22 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
                   onDragOver={e => e.preventDefault()}
                   onDrop={() => soltarEnMesa(mesa)}
                   style={{
-                    background: 'var(--color-surface)', border: '0.5px dashed var(--color-border)',
-                    borderRadius: 'var(--radius)', padding: 12, minHeight: 120,
+                    background: 'var(--color-surface)', border: '0.5px solid var(--color-border)',
+                    borderRadius: 14, padding: '14px 16px', minHeight: 120,
+                    boxShadow: '0 1px 2px rgba(28,28,28,0.04)',
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                    <p style={{ fontSize: 14, margin: 0 }}>{mesa.nombre}</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 12, color: lleno ? 'var(--color-coral-text)' : 'var(--color-text-muted)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                    <p style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 17, margin: 0, color: 'var(--color-text-primary)' }}>
+                      {mesa.nombre}
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{
+                        fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase',
+                        padding: '3px 9px', borderRadius: 20,
+                        background: lleno ? 'var(--color-coral-light)' : 'var(--color-surface-muted)',
+                        color: lleno ? 'var(--color-coral-text)' : 'var(--color-text-muted)',
+                      }}>
                         {ocupados}/{mesa.capacidad}
                       </span>
                       <button
@@ -249,10 +257,17 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
                       </button>
                     </div>
                   </div>
+                  <div style={{ height: 3, background: 'var(--color-surface-muted)', borderRadius: 2, overflow: 'hidden', marginBottom: 10 }}>
+                    <div style={{
+                      height: '100%', borderRadius: 2,
+                      width: `${Math.min(100, (ocupados / mesa.capacidad) * 100)}%`,
+                      background: lleno ? 'var(--color-coral)' : 'var(--color-sage)',
+                    }} />
+                  </div>
                   {mesa.asignaciones.map(a => (
                     <div key={a.invitado_id} style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      fontSize: 12, background: 'var(--color-surface-muted)', borderRadius: 6, padding: '4px 8px', marginBottom: 4,
+                      fontSize: 12, background: 'var(--color-surface-muted)', borderRadius: 8, padding: '6px 10px', marginBottom: 4,
                     }}>
                       <span>{a.nombre_familia} ({a.lugares_ocupados})</span>
                       <button
@@ -279,7 +294,12 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
 function SeccionInvitados({ titulo, color, invitados, onArrastrar }) {
   return (
     <div style={{ marginBottom: 20 }}>
-      <p style={{ fontSize: 12, color, margin: '0 0 6px', fontWeight: 500 }}>{titulo} ({invitados.length})</p>
+      <p style={{
+        fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase',
+        color, margin: '0 0 8px', fontWeight: 500,
+      }}>
+        {titulo} · {invitados.length}
+      </p>
       {invitados.length === 0 && (
         <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>—</p>
       )}
@@ -290,7 +310,8 @@ function SeccionInvitados({ titulo, color, invitados, onArrastrar }) {
           onDragStart={() => onArrastrar(inv)}
           style={{
             background: 'var(--color-surface)', border: '0.5px solid var(--color-border)',
-            borderRadius: 8, padding: '6px 10px', fontSize: 13, marginBottom: 6, cursor: 'grab',
+            borderRadius: 8, padding: '7px 11px', fontSize: 13, marginBottom: 6, cursor: 'grab',
+            boxShadow: '0 1px 2px rgba(28,28,28,0.03)',
           }}
         >
           {inv.nombre_familia}
