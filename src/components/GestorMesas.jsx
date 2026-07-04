@@ -125,17 +125,19 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
         </button>
       )}
 
-      <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '0 0 1.5rem' }}>
-        Arrastra un invitado de la izquierda hacia una mesa
+      <p style={{ fontSize: 13, color: invitadoArrastrado ? 'var(--color-sage-text)' : 'var(--color-text-muted)', margin: '0 0 1.5rem' }}>
+        {invitadoArrastrado
+          ? `"${invitadoArrastrado.nombre_familia}" seleccionado — toca una mesa para asignarlo, o toca de nuevo para cancelar`
+          : 'Arrastra un invitado hacia una mesa (o tócalo y luego toca la mesa, en pantallas táctiles)'}
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20 }}>
 
         {/* Columna izquierda: invitados sin mesa */}
         <div>
-          <SeccionInvitados titulo="Confirmados" color="var(--color-sage)" invitados={confirmados} onArrastrar={setInvitadoArrastrado} />
-          <SeccionInvitados titulo="Pendientes" color="var(--color-text-muted)" invitados={pendientes} onArrastrar={setInvitadoArrastrado} />
-          <SeccionInvitados titulo="No confirmados" color="var(--color-coral)" invitados={noConfirmados} onArrastrar={setInvitadoArrastrado} />
+          <SeccionInvitados titulo="Confirmados" color="var(--color-sage)" invitados={confirmados} seleccionado={invitadoArrastrado} onArrastrar={setInvitadoArrastrado} />
+          <SeccionInvitados titulo="Pendientes" color="var(--color-text-muted)" invitados={pendientes} seleccionado={invitadoArrastrado} onArrastrar={setInvitadoArrastrado} />
+          <SeccionInvitados titulo="No confirmados" color="var(--color-coral)" invitados={noConfirmados} seleccionado={invitadoArrastrado} onArrastrar={setInvitadoArrastrado} />
         </div>
 
         {/* Columna derecha: mesas */}
@@ -224,10 +226,13 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
                   key={mesa.id}
                   onDragOver={e => e.preventDefault()}
                   onDrop={() => soltarEnMesa(mesa)}
+                  onClick={() => { if (invitadoArrastrado) soltarEnMesa(mesa) }}
                   style={{
-                    background: 'var(--color-surface)', border: '0.5px solid var(--color-border)',
+                    background: 'var(--color-surface)',
+                    border: invitadoArrastrado ? '1.5px dashed var(--color-sage)' : '0.5px solid var(--color-border)',
                     borderRadius: 14, padding: '14px 16px', minHeight: 120,
                     boxShadow: '0 1px 2px rgba(28,28,28,0.04)',
+                    cursor: invitadoArrastrado ? 'pointer' : 'default',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
@@ -291,7 +296,12 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
   )
 }
 
-function SeccionInvitados({ titulo, color, invitados, onArrastrar }) {
+function SeccionInvitados({ titulo, color, invitados, seleccionado, onArrastrar }) {
+  function manejarClick(inv) {
+    // Toggle: si ya estaba seleccionado este mismo invitado, lo deselecciona
+    onArrastrar(seleccionado?.id === inv.id ? null : inv)
+  }
+
   return (
     <div style={{ marginBottom: 20 }}>
       <p style={{
@@ -303,21 +313,26 @@ function SeccionInvitados({ titulo, color, invitados, onArrastrar }) {
       {invitados.length === 0 && (
         <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>—</p>
       )}
-      {invitados.map(inv => (
-        <div
-          key={inv.id}
-          draggable
-          onDragStart={() => onArrastrar(inv)}
-          style={{
-            background: 'var(--color-surface)', border: '0.5px solid var(--color-border)',
-            borderRadius: 8, padding: '7px 11px', fontSize: 13, marginBottom: 6, cursor: 'grab',
-            boxShadow: '0 1px 2px rgba(28,28,28,0.03)',
-          }}
-        >
-          {inv.nombre_familia}
-          <span style={{ color: 'var(--color-text-muted)', fontSize: 11 }}> ({inv.pases_confirmados ?? inv.pases_asignados})</span>
-        </div>
-      ))}
+      {invitados.map(inv => {
+        const activo = seleccionado?.id === inv.id
+        return (
+          <div
+            key={inv.id}
+            draggable
+            onDragStart={() => onArrastrar(inv)}
+            onClick={() => manejarClick(inv)}
+            style={{
+              background: activo ? 'var(--color-sage-light)' : 'var(--color-surface)',
+              border: activo ? '1px solid var(--color-sage)' : '0.5px solid var(--color-border)',
+              borderRadius: 8, padding: '7px 11px', fontSize: 13, marginBottom: 6, cursor: 'grab',
+              boxShadow: '0 1px 2px rgba(28,28,28,0.03)',
+            }}
+          >
+            {inv.nombre_familia}
+            <span style={{ color: 'var(--color-text-muted)', fontSize: 11 }}> ({inv.pases_confirmados ?? inv.pases_asignados})</span>
+          </div>
+        )
+      })}
     </div>
   )
 }
