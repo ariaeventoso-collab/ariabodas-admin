@@ -137,7 +137,9 @@ exports.confirmarRSVP = onCall(async (request) => {
     throw new HttpsError('not-found', 'Invitado no encontrado.')
   }
 
-  const tope = invitadoDoc.data().pases_asignados
+  const datosInvitado = invitadoDoc.data()
+  const tope = datosInvitado.pases_asignados
+  const estadoPrevio = datosInvitado.estado_rsvp || 'pendiente'
 
   // Regla clave: no puede confirmar más de lo asignado
   if (pasesConfirmados > tope) {
@@ -153,14 +155,22 @@ exports.confirmarRSVP = onCall(async (request) => {
   })
 
   // REGLA DE MESAS: si este invitado ya estaba en una mesa, lo sacamos
-  // automáticamente para forzar que lo vuelvan a acomodar a propósito
-  const mesasSnap = await db.collection('bodas').doc(bodaId).collection('mesas').get()
-  for (const mesaDoc of mesasSnap.docs) {
-    const asignaciones = mesaDoc.data().asignaciones || []
-    const tieneAlInvitado = asignaciones.some(a => a.invitado_id === invitadoId)
-    if (tieneAlInvitado) {
-      const nuevasAsignaciones = asignaciones.filter(a => a.invitado_id !== invitadoId)
-      await mesaDoc.ref.update({ asignaciones: nuevasAsignaciones })
+  // automáticamente para forzar que lo vuelvan a acomodar a propósito.
+  //
+  // OPTIMIZACIÓN: si el invitado estaba "pendiente" antes de esta
+  // confirmación, es IMPOSIBLE que ya lo hayan sentado en una mesa
+  // (el flujo del admin solo arrastra invitados con RSVP resuelto).
+  // Nos ahorramos leer todas las mesas de la boda en ese caso, que es
+  // el más común (primera confirmación de cada invitado).
+  if (estadoPrevio !== 'pendiente') {
+    const mesasSnap = await db.collection('bodas').doc(bodaId).collection('mesas').get()
+    for (const mesaDoc of mesasSnap.docs) {
+      const asignaciones = mesaDoc.data().asignaciones || []
+      const tieneAlInvitado = asignaciones.some(a => a.invitado_id === invitadoId)
+      if (tieneAlInvitado) {
+        const nuevasAsignaciones = asignaciones.filter(a => a.invitado_id !== invitadoId)
+        await mesaDoc.ref.update({ asignaciones: nuevasAsignaciones })
+      }
     }
   }
 

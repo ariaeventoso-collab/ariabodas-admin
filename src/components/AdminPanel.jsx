@@ -9,17 +9,17 @@ import CrearBoda from './CrearBoda'
 import MensajesBoda from './MensajesBoda'
 import CRMWhatsapp from './CRMWhatsapp'
 
-// Colores de acento que se van alternando por boda, para que cada
-// tarjeta se distinga visualmente (igual que en la vista previa aprobada)
-const acentos = [
-  { bg: 'var(--color-sage-light)', text: 'var(--color-sage-text)' },
-  { bg: 'var(--color-coral-light)', text: 'var(--color-coral-text)' },
-]
-
 function iniciales(nombre1, nombre2) {
   const a = nombre1?.[0]?.toUpperCase() || ''
   const b = nombre2?.[0]?.toUpperCase() || ''
   return `${a}${b}`
+}
+
+function diasRestantes(fecha) {
+  if (!fecha) return null
+  const hoy = new Date()
+  const dias = Math.ceil((fecha.getTime() - hoy.getTime()) / 86400000)
+  return dias >= 0 ? dias : null
 }
 
 export default function AdminPanel() {
@@ -106,67 +106,13 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, maxWidth: 720, margin: '0 auto 1.5rem', padding: '0 1.5rem' }}>
-          <button
-            onClick={() => setVista('invitados')}
-            style={{
-              fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
-              background: vista === 'invitados' ? 'var(--color-sage-light)' : 'transparent',
-              color: vista === 'invitados' ? 'var(--color-sage-text)' : 'var(--color-text-secondary)',
-            }}
-          >
-            Invitados
-          </button>
-          <button
-            onClick={() => setVista('crm')}
-            style={{
-              fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
-              background: vista === 'crm' ? 'var(--color-sage-light)' : 'transparent',
-              color: vista === 'crm' ? 'var(--color-sage-text)' : 'var(--color-text-secondary)',
-            }}
-          >
-            CRM
-          </button>
-          <button
-            onClick={() => setVista('mesas')}
-            style={{
-              fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
-              background: vista === 'mesas' ? 'var(--color-sage-light)' : 'transparent',
-              color: vista === 'mesas' ? 'var(--color-sage-text)' : 'var(--color-text-secondary)',
-            }}
-          >
-            Mesas
-          </button>
-          <button
-            onClick={() => setVista('mensajes')}
-            style={{
-              fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
-              background: vista === 'mensajes' ? 'var(--color-sage-light)' : 'transparent',
-              color: vista === 'mensajes' ? 'var(--color-sage-text)' : 'var(--color-text-secondary)',
-            }}
-          >
-            Mensajes
-          </button>
-          <button
-            onClick={() => setVista('accesos')}
-            style={{
-              fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
-              background: vista === 'accesos' ? 'var(--color-sage-light)' : 'transparent',
-              color: vista === 'accesos' ? 'var(--color-sage-text)' : 'var(--color-text-secondary)',
-            }}
-          >
-            Accesos
-          </button>
-          <button
-            onClick={() => setVista('diseno')}
-            style={{
-              fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '0.5px solid var(--color-border)',
-              background: vista === 'diseno' ? 'var(--color-sage-light)' : 'transparent',
-              color: vista === 'diseno' ? 'var(--color-sage-text)' : 'var(--color-text-secondary)',
-            }}
-          >
-            Diseño
-          </button>
+        <div style={{ display: 'flex', gap: 4, maxWidth: 720, margin: '0 auto 1.5rem', padding: '0 1.5rem', borderBottom: '0.5px solid var(--color-border)' }}>
+          <TabBoton activo={vista === 'invitados'} onClick={() => setVista('invitados')}>Invitados</TabBoton>
+          <TabBoton activo={vista === 'crm'} onClick={() => setVista('crm')}>CRM</TabBoton>
+          <TabBoton activo={vista === 'mesas'} onClick={() => setVista('mesas')}>Mesas</TabBoton>
+          <TabBoton activo={vista === 'mensajes'} onClick={() => setVista('mensajes')}>Mensajes</TabBoton>
+          <TabBoton activo={vista === 'accesos'} onClick={() => setVista('accesos')}>Accesos</TabBoton>
+          <TabBoton activo={vista === 'diseno'} onClick={() => setVista('diseno')}>Diseño</TabBoton>
         </div>
         {vista === 'invitados' && (
           <GestionInvitados boda={bodaSeleccionada} ocultarVolver />
@@ -194,7 +140,10 @@ export default function AdminPanel() {
     <div style={{ maxWidth: 960, margin: '0 auto', padding: '2rem 1.5rem' }}>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div>
+          <p style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-text-muted)', margin: '0 0 4px', fontWeight: 500 }}>
+            Aria Eventos
+          </p>
           <img src="/logo-aria.png" alt="Aria Eventos" style={{ height: 30, width: 'auto', display: 'block' }} />
         </div>
         <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Panel de administrador</span>
@@ -206,15 +155,18 @@ export default function AdminPanel() {
       }}>
         <TarjetaResumen etiqueta="Bodas activas" valor={totalBodas} />
         <TarjetaResumen etiqueta="Invitados totales" valor={totalInvitados} />
-        <TarjetaResumen etiqueta="Confirmados" valor={totalConfirmados} />
-        <TarjetaResumen etiqueta="Pendientes" valor={totalPendientes} />
+        <TarjetaResumen etiqueta="Confirmados" valor={totalConfirmados} valorColor="var(--color-sage-text)" />
+        <TarjetaResumen etiqueta="Pendientes" valor={totalPendientes} enfasis />
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>Tus bodas</span>
         <button onClick={() => setMostrarCrearBoda(!mostrarCrearBoda)} style={{
-          fontSize: 13, background: 'transparent', border: '0.5px solid var(--color-border)',
-          borderRadius: 8, padding: '6px 12px', color: 'var(--color-text-primary)',
+          fontSize: 13, background: mostrarCrearBoda ? 'transparent' : 'var(--color-ink)',
+          border: mostrarCrearBoda ? '0.5px solid var(--color-border)' : 'none',
+          borderRadius: 10, padding: '8px 16px',
+          color: mostrarCrearBoda ? 'var(--color-text-primary)' : 'var(--color-coral)',
+          fontWeight: 500,
         }}>
           {mostrarCrearBoda ? 'Cancelar' : '+ Nueva boda'}
         </button>
@@ -254,10 +206,12 @@ export default function AdminPanel() {
           display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12,
         }}>
           {bodas.map((boda, i) => {
-            const acento = acentos[i % acentos.length]
             const pasesConfirmados = boda.invitados?.reduce((acc, g) => acc + (g.pases_confirmados || 0), 0) || 0
             const totalPases = boda.invitados?.reduce((acc, g) => acc + (g.pases_asignados || 0), 0) || 0
-            const fecha = boda.fecha_evento?.toDate().toLocaleDateString('es-MX', {
+            const porcentaje = totalPases > 0 ? Math.min(100, Math.round((pasesConfirmados / totalPases) * 100)) : 0
+            const fechaObj = boda.fecha_evento?.toDate ? boda.fecha_evento.toDate() : null
+            const dias = diasRestantes(fechaObj)
+            const fecha = fechaObj?.toLocaleDateString('es-MX', {
               day: 'numeric', month: 'short', year: 'numeric',
             })
 
@@ -267,33 +221,50 @@ export default function AdminPanel() {
                 onClick={() => { setBodaSeleccionada(boda); setVista('invitados') }}
                 style={{
                   background: 'var(--color-surface)', border: '0.5px solid var(--color-border)',
-                  borderRadius: 'var(--radius)', padding: '1rem 1.1rem', cursor: 'pointer',
+                  borderRadius: 14, padding: '1.1rem 1.15rem', cursor: 'pointer',
+                  boxShadow: '0 1px 2px rgba(28,28,28,0.04)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                  <div style={{
-                    width: 38, height: 38, borderRadius: '50%',
-                    background: acento.bg, color: acento.text,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontFamily: 'var(--font-display)', fontSize: 14,
-                  }}>
-                    {iniciales(boda.nombre_novio_1, boda.nombre_novio_2)}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+                    <div style={{
+                      width: 38, height: 38, borderRadius: '50%',
+                      background: 'var(--color-ink)', color: 'var(--color-coral)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14,
+                    }}>
+                      {iniciales(boda.nombre_novio_1, boda.nombre_novio_2)}
+                    </div>
+                    <div>
+                      <p style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 16, margin: 0, lineHeight: 1.2 }}>
+                        {boda.nombre_novio_1} &amp; {boda.nombre_novio_2}
+                      </p>
+                      <p style={{ fontSize: 11, color: 'var(--color-text-muted)', margin: '2px 0 0' }}>
+                        {boda.ciudad} · {fecha}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p style={{ fontFamily: 'var(--font-display)', fontSize: 16, margin: 0 }}>
-                      {boda.nombre_novio_1} &amp; {boda.nombre_novio_2}
-                    </p>
-                    <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>
-                      {boda.ciudad} · {fecha}
-                    </p>
-                  </div>
+                  {dias !== null && (
+                    <span style={{
+                      fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase',
+                      background: 'var(--color-coral-light)', color: 'var(--color-coral-text)',
+                      padding: '3px 8px', borderRadius: 20, whiteSpace: 'nowrap',
+                    }}>
+                      {dias} días
+                    </span>
+                  )}
                 </div>
-                <div style={{
-                  display: 'flex', gap: 14, fontSize: 12, color: 'var(--color-text-secondary)',
-                  borderTop: '0.5px solid var(--color-border)', paddingTop: 8,
-                }}>
-                  <span>{pasesConfirmados}/{totalPases} confirmados</span>
-                  <span>{boda.totalMesas} mesas</span>
+                <div style={{ height: 1, background: 'var(--color-surface-muted)', marginBottom: 12 }} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ height: 4, background: 'var(--color-surface-muted)', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
+                      <div style={{ height: '100%', width: `${porcentaje}%`, background: 'var(--color-sage)', borderRadius: 2 }} />
+                    </div>
+                    <p style={{ fontSize: 11, color: 'var(--color-text-secondary)', margin: 0 }}>
+                      {pasesConfirmados}/{totalPases} confirmados
+                    </p>
+                  </div>
+                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>{boda.totalMesas} mesas</span>
                 </div>
               </div>
             )
@@ -304,11 +275,41 @@ export default function AdminPanel() {
   )
 }
 
-function TarjetaResumen({ etiqueta, valor }) {
+function TabBoton({ activo, onClick, children }) {
   return (
-    <div style={{ background: 'var(--color-surface-muted)', borderRadius: 'var(--radius)', padding: '1rem' }}>
-      <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '0 0 6px' }}>{etiqueta}</p>
-      <p style={{ fontSize: 24, fontWeight: 500, margin: 0 }}>{valor}</p>
+    <button
+      onClick={onClick}
+      style={{
+        position: 'relative', fontSize: 13, padding: '10px 14px', background: 'transparent',
+        border: 'none', color: activo ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
+        transition: 'color .15s',
+      }}
+    >
+      {children}
+      {activo && (
+        <span style={{
+          position: 'absolute', left: 10, right: 10, bottom: -1, height: 2,
+          background: 'var(--color-coral)',
+        }} />
+      )}
+    </button>
+  )
+}
+
+function TarjetaResumen({ etiqueta, valor, enfasis, valorColor }) {
+  return (
+    <div style={{
+      background: enfasis ? 'var(--color-ink)' : 'var(--color-surface)',
+      border: enfasis ? 'none' : '0.5px solid var(--color-border)',
+      borderRadius: 12, padding: '0.9rem 1rem',
+    }}>
+      <p style={{ fontSize: 11, color: enfasis ? 'var(--color-text-muted)' : 'var(--color-text-muted)', margin: '0 0 6px' }}>{etiqueta}</p>
+      <p style={{
+        fontSize: 24, fontWeight: 500, margin: 0, fontVariantNumeric: 'tabular-nums',
+        color: enfasis ? 'var(--color-coral)' : (valorColor || 'var(--color-text-primary)'),
+      }}>
+        {valor}
+      </p>
     </div>
   )
 }

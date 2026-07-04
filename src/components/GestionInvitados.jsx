@@ -100,6 +100,23 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
       pases_confirmados: pasesSegunEstado[nuevoEstado],
       actualizado_en: new Date(),
     })
+
+    // MISMA REGLA que usa la Cloud Function confirmarRSVP: si el invitado
+    // ya estaba sentado en una mesa, lo sacamos al cambiar su estado desde
+    // aquí también. Antes esto solo pasaba cuando el invitado confirmaba
+    // por su cuenta desde la invitación pública — si el admin lo cambiaba
+    // manualmente desde este panel, la mesa nunca se actualizaba y podía
+    // quedar un invitado "no va" sentado en una mesa como si nada.
+    const mesasSnap = await getDocs(collection(db, 'bodas', boda.id, 'mesas'))
+    for (const mesaDoc of mesasSnap.docs) {
+      const asignaciones = mesaDoc.data().asignaciones || []
+      if (asignaciones.some(a => a.invitado_id === invitado.id)) {
+        await updateDoc(mesaDoc.ref, {
+          asignaciones: asignaciones.filter(a => a.invitado_id !== invitado.id),
+        })
+      }
+    }
+
     cargarInvitados()
   }
 
@@ -453,12 +470,15 @@ function BotonEstado({ label, activo, onClick, tipo }) {
     <button
       onClick={onClick}
       style={{
-        fontSize: 11, padding: '4px 10px', borderRadius: 20, border: 'none', cursor: 'pointer',
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase',
+        padding: '4px 12px', borderRadius: 20, border: 'none', cursor: 'pointer',
         background: activo ? c.bg : 'transparent',
         color: activo ? c.text : 'var(--color-text-muted)',
         outline: activo ? 'none' : '0.5px solid var(--color-border)',
       }}
     >
+      {activo && <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor', opacity: 0.7 }} />}
       {label}
     </button>
   )
