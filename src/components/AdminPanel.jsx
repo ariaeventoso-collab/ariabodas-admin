@@ -67,11 +67,24 @@ export default function AdminPanel() {
   }
 
   const totalBodas = bodas.length
-  const totalInvitados = bodas.reduce((acc, b) => acc + (b.invitados?.length || 0), 0)
-  const totalConfirmados = bodas.reduce(
-    (acc, b) => acc + (b.invitados?.filter(i => i.estado_rsvp === 'confirmado').length || 0),
+  // Personas reales invitadas (no registros de familia) — suma los pases
+  // asignados a cada familia, no la cantidad de documentos "invitado".
+  const totalPersonas = bodas.reduce(
+    (acc, b) => acc + (b.invitados?.reduce((s, i) => s + (i.pases_asignados || 0), 0) || 0),
     0
   )
+  // "Resueltos" = ya no necesitan seguimiento, sea porque confirmaron
+  // o porque ya dijeron que no van. Se cuenta en personas.
+  const totalResueltos = bodas.reduce(
+    (acc, b) => acc + (b.invitados?.reduce((s, i) => {
+      if (i.estado_rsvp === 'confirmado') return s + (i.pases_confirmados || 0)
+      if (i.estado_rsvp === 'no_confirmado') return s + (i.pases_asignados || 0)
+      return s
+    }, 0) || 0),
+    0
+  )
+  // Solo cuenta a quienes de verdad faltan por resolver — los rechazados
+  // ya están arriba en "Resueltos", no se mezclan aquí.
   const totalPendientes = bodas.reduce(
     (acc, b) => acc + (b.invitados?.filter(i => i.estado_rsvp === 'pendiente').length || 0),
     0
@@ -154,8 +167,8 @@ export default function AdminPanel() {
         gap: 12, marginBottom: '2rem',
       }}>
         <TarjetaResumen etiqueta="Bodas activas" valor={totalBodas} />
-        <TarjetaResumen etiqueta="Invitados totales" valor={totalInvitados} />
-        <TarjetaResumen etiqueta="Confirmados" valor={totalConfirmados} valorColor="var(--color-sage-text)" />
+        <TarjetaResumen etiqueta="Personas invitadas" valor={totalPersonas} />
+        <TarjetaResumen etiqueta="Resueltos" valor={totalResueltos} valorColor="var(--color-sage-text)" />
         <TarjetaResumen etiqueta="Pendientes" valor={totalPendientes} enfasis />
       </div>
 

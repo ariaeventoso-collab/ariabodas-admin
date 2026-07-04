@@ -26,6 +26,7 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
   const [invitadoEditando, setInvitadoEditando] = useState(null)
   const [avisoCambioPases, setAvisoCambioPases] = useState(null)
   const [busqueda, setBusqueda] = useState('')
+  const [filtroEstado, setFiltroEstado] = useState('todos')
   const [whatsappAbierto, setWhatsappAbierto] = useState(null)
   const [mensajeWhatsapp, setMensajeWhatsapp] = useState('')
 
@@ -167,9 +168,21 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
   }
 
   const totalPases = invitados.reduce((acc, i) => acc + (i.pases_asignados || 0), 0)
-  const invitadosFiltrados = invitados.filter(inv =>
-    inv.nombre_familia.toLowerCase().includes(busqueda.toLowerCase())
-  )
+
+  const conteos = {
+    todos: invitados.length,
+    confirmado: invitados.filter(i => i.estado_rsvp === 'confirmado').length,
+    no_confirmado: invitados.filter(i => i.estado_rsvp === 'no_confirmado').length,
+    pendiente: invitados.filter(i => i.estado_rsvp === 'pendiente' || !i.estado_rsvp).length,
+  }
+
+  const invitadosFiltrados = invitados
+    .filter(inv => inv.nombre_familia.toLowerCase().includes(busqueda.toLowerCase()))
+    .filter(inv => {
+      if (filtroEstado === 'todos') return true
+      if (filtroEstado === 'pendiente') return inv.estado_rsvp === 'pendiente' || !inv.estado_rsvp
+      return inv.estado_rsvp === filtroEstado
+    })
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '2rem 1.5rem' }}>
@@ -227,8 +240,15 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
         value={busqueda}
         onChange={e => setBusqueda(e.target.value)}
         placeholder="Buscar por nombre…"
-        style={{ ...campoEstilo, marginBottom: 14 }}
+        style={{ ...campoEstilo, marginBottom: 10 }}
       />
+
+      <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+        <FiltroEstado label="Todos" cantidad={conteos.todos} activo={filtroEstado === 'todos'} onClick={() => setFiltroEstado('todos')} />
+        <FiltroEstado label="Confirmados" cantidad={conteos.confirmado} activo={filtroEstado === 'confirmado'} onClick={() => setFiltroEstado('confirmado')} tipo="confirmado" />
+        <FiltroEstado label="Pendientes" cantidad={conteos.pendiente} activo={filtroEstado === 'pendiente'} onClick={() => setFiltroEstado('pendiente')} tipo="pendiente" />
+        <FiltroEstado label="No van" cantidad={conteos.no_confirmado} activo={filtroEstado === 'no_confirmado'} onClick={() => setFiltroEstado('no_confirmado')} tipo="no_confirmado" />
+      </div>
 
       {avisoCambioPases && (
         <div style={{
@@ -456,6 +476,37 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
         </div>
       )}
     </div>
+  )
+}
+
+function FiltroEstado({ label, cantidad, activo, onClick, tipo }) {
+  const colores = {
+    todos: { bg: 'var(--color-ink)', text: 'var(--color-coral)' },
+    confirmado: { bg: 'var(--color-sage-light)', text: 'var(--color-sage-text)' },
+    pendiente: { bg: 'var(--color-surface-muted)', text: 'var(--color-text-secondary)' },
+    no_confirmado: { bg: 'var(--color-coral-light)', text: 'var(--color-coral-text)' },
+  }
+  const c = colores[tipo || 'todos']
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        fontSize: 12, padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
+        border: activo ? 'none' : '0.5px solid var(--color-border)',
+        background: activo ? c.bg : 'transparent',
+        color: activo ? c.text : 'var(--color-text-secondary)',
+      }}
+    >
+      {label}
+      <span style={{
+        fontSize: 11, padding: '1px 6px', borderRadius: 10,
+        background: activo ? 'rgba(255,255,255,0.25)' : 'var(--color-surface-muted)',
+        color: activo ? 'inherit' : 'var(--color-text-muted)',
+      }}>
+        {cantidad}
+      </span>
+    </button>
   )
 }
 
