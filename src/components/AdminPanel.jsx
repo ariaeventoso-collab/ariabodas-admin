@@ -27,6 +27,8 @@ export default function AdminPanel() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
   const [bodaSeleccionada, setBodaSeleccionada] = useState(null)
+  const [vista, setVista] = useState('invitados')
+  const [mostrarCrearBoda, setMostrarCrearBoda] = useState(false)
 
   // Cuando entras al detalle de una boda, registramos un paso en el
   // historial del navegador. Así, si el usuario presiona "atrás", en vez
@@ -57,8 +59,6 @@ export default function AdminPanel() {
       setBodaSeleccionada(null)
     }
   }
-  const [vista, setVista] = useState('invitados')
-  const [mostrarCrearBoda, setMostrarCrearBoda] = useState(false)
 
   useEffect(() => {
     cargarBodas()
@@ -252,7 +252,14 @@ export default function AdminPanel() {
           display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12,
         }}>
           {bodas.map((boda, i) => {
-            const pasesConfirmados = boda.invitados?.reduce((acc, g) => acc + (g.pases_confirmados || 0), 0) || 0
+            // Blindado: solo suma pases_confirmados de invitados cuyo
+            // estado_rsvp realmente sea 'confirmado'. Antes sumaba el campo
+            // sin filtrar por estado, lo cual podía mostrar una barra de
+            // progreso incorrecta si algún dato quedaba inconsistente.
+            const pasesConfirmados = boda.invitados?.reduce(
+              (acc, g) => g.estado_rsvp === 'confirmado' ? acc + (g.pases_confirmados || 0) : acc,
+              0
+            ) || 0
             const totalPases = boda.invitados?.reduce((acc, g) => acc + (g.pases_asignados || 0), 0) || 0
             const porcentaje = totalPases > 0 ? Math.min(100, Math.round((pasesConfirmados / totalPases) * 100)) : 0
             const fechaObj = boda.fecha_evento?.toDate ? boda.fecha_evento.toDate() : null

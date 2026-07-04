@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { collection, getDocs, query, orderBy } from 'firebase/firestore'
+import { collection, getDocs, query, orderBy, doc, updateDoc } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
 
 // Convierte HTML con negritas/cursivas/tachado (de Word, WhatsApp Web,
@@ -11,7 +11,12 @@ function htmlAFormatoWhatsapp(html) {
 
   function recorrer(nodo) {
     if (nodo.nodeType === Node.TEXT_NODE) {
-      return nodo.textContent
+      // Escapa los símbolos que WhatsApp interpreta como formato (*_~) si
+      // ya venían sueltos en el texto plano (ej. "Precio: $50 * persona").
+      // Sin esto, un asterisco/guion bajo/tilde sueltos podían combinarse
+      // con el marcador de negrita/cursiva puesto más adelante y romper
+      // el formato final en WhatsApp.
+      return nodo.textContent.replace(/([*_~])/g, '\u200b$1\u200b')
     }
     if (nodo.nodeType !== Node.ELEMENT_NODE) return ''
 
@@ -61,7 +66,6 @@ export default function CRMWhatsapp({ boda }) {
   const [filtro, setFiltro] = useState('todos')
   const [mensaje, setMensaje] = useState('')
   const textareaRef = useRef(null)
-  const [enviados, setEnviados] = useState(new Set())
 
   useEffect(() => {
     cargarInvitados()
@@ -100,11 +104,24 @@ export default function CRMWhatsapp({ boda }) {
     }, 0)
   }
 
-  function enviar(inv) {
+  async function enviar(inv) {
     const numero = `${inv.lada}${inv.telefono}`.replace(/[^\d+]/g, '')
     const texto = encodeURIComponent(mensaje)
     window.open(`https://wa.me/${numero}?text=${texto}`, '_blank')
-    setEnviados(prev => new Set(prev).add(inv.id))
+
+    // Persistido en Firestore (no solo estado local) para que el rastro de
+    // "ya se le envió" no se pierda si cambias de pestaña o recargas.
+    try {
+      await updateDoc(doc(db, 'bodas', boda.id, 'invitados', inv.id), {
+        ultimo_mensaje_enviado_en: new Date(),
+      })
+      setInvitados(prev => prev.map(i =>
+        i.id === inv.id ? { ...i, ultimo_mensaje_enviado_en: { toDate: () => new Date() } } : i
+      ))
+    } catch (e) {
+      // Si falla el registro, no bloqueamos el envío (ya se abrió WhatsApp);
+      // solo no quedará marcado como enviado hasta la próxima recarga.
+    }
   }
 
   return (
@@ -171,32 +188,35 @@ export default function CRMWhatsapp({ boda }) {
 
       {!cargando && conTelefono.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {conTelefono.map(inv => (
-            <div key={inv.id} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              background: 'var(--color-surface)', border: '0.5px solid var(--color-border)',
-              borderRadius: 8, padding: '10px 14px',
-            }}>
-              <div>
-                <p style={{ fontSize: 14, margin: 0 }}>{inv.nombre_familia}</p>
-                <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '2px 0 0' }}>
-                  {inv.lada} {inv.telefono}
-                </p>
+          {conTelefono.map(inv => {
+            const yaEnviado = !!inv.ultimo_mensaje_enviado_en
+            return (
+              <div key={inv.id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: 'var(--color-surface)', border: '0.5px solid var(--color-border)',
+                borderRadius: 8, padding: '10px 14px',
+              }}>
+                <div>
+                  <p style={{ fontSize: 14, margin: 0 }}>{inv.nombre_familia}</p>
+                  <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '2px 0 0' }}>
+                    {inv.lada} {inv.telefono}
+                  </p>
+                </div>
+                <button
+                  onClick={() => enviar(inv)}
+                  disabled={!mensaje.trim()}
+                  style={{
+                    fontSize: 12, padding: '6px 14px', borderRadius: 8, border: 'none',
+                    cursor: mensaje.trim() ? 'pointer' : 'not-allowed',
+                    background: yaEnviado ? 'var(--color-surface-muted)' : 'var(--color-sage)',
+                    color: yaEnviado ? 'var(--color-text-secondary)' : '#fff',
+                  }}
+                >
+                  {yaEnviado ? '✓ Enviado' : 'Enviar'}
+                </button>
               </div>
-              <button
-                onClick={() => enviar(inv)}
-                disabled={!mensaje.trim()}
-                style={{
-                  fontSize: 12, padding: '6px 14px', borderRadius: 8, border: 'none',
-                  cursor: mensaje.trim() ? 'pointer' : 'not-allowed',
-                  background: enviados.has(inv.id) ? 'var(--color-surface-muted)' : 'var(--color-sage)',
-                  color: enviados.has(inv.id) ? 'var(--color-text-secondary)' : '#fff',
-                }}
-              >
-                {enviados.has(inv.id) ? '✓ Enviado' : 'Enviar'}
-              </button>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

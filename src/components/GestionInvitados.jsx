@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, orderBy, query } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
+import { quitarInvitadoDeMesas, actualizarLugaresEnMesas } from '../lib/mesaHelpers'
 import ImportarExcel from './ImportarExcel'
 
 const LADAS = [
@@ -29,6 +30,7 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
   const [filtroEstado, setFiltroEstado] = useState('todos')
   const [whatsappAbierto, setWhatsappAbierto] = useState(null)
   const [mensajeWhatsapp, setMensajeWhatsapp] = useState('')
+  const [errorEdicion, setErrorEdicion] = useState(null)
 
   useEffect(() => {
     cargarInvitados()
@@ -45,19 +47,41 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
 
   async function guardarEdicion(e) {
     e.preventDefault()
+    setErrorEdicion(null)
+
     if (!invitadoEditando.nombre_familia.trim()) return
 
-    const original = invitados.find(i => i.id === invitadoEditando.id)
     const pasesNuevos = Number(invitadoEditando.pases_asignados)
+    if (!pasesNuevos || pasesNuevos < 1) {
+      setErrorEdicion('El número de pases debe ser al menos 1.')
+      return
+    }
+
+    const original = invitados.find(i => i.id === invitadoEditando.id)
     const cambioDePases = original && original.pases_asignados !== pasesNuevos
 
-    await updateDoc(doc(db, 'bodas', boda.id, 'invitados', invitadoEditando.id), {
+    // Si el invitado ya estaba confirmado, sus pases_confirmados deben
+    // moverse junto con pases_asignados — si no, la mesa se queda con el
+    // número viejo aunque aquí se vea actualizado.
+    const yaConfirmado = original?.estado_rsvp === 'confirmado'
+    const datosActualizados = {
       nombre_familia: invitadoEditando.nombre_familia.trim(),
       telefono: invitadoEditando.telefono.trim(),
       lada: invitadoEditando.lada,
       pases_asignados: pasesNuevos,
       actualizado_en: new Date(),
-    })
+    }
+    if (yaConfirmado) {
+      datosActualizados.pases_confirmados = pasesNuevos
+    }
+
+    await updateDoc(doc(db, 'bodas', boda.id, 'invitados', invitadoEditando.id), datosActualizados)
+
+    // Si estaba sentado en una mesa, sincroniza el número de lugares que
+    // ocupa ahí también (transaccional, ver lib/mesaHelpers.js).
+    if (yaConfirmado && cambioDePases) {
+      await actualizarLugaresEnMesas(boda.id, invitadoEditando.id, pasesNuevos)
+    }
 
     if (cambioDePases) {
       setAvisoCambioPases(
@@ -75,16 +99,8 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
     )
     if (!confirmar) return
 
-    // Quitarlo de cualquier mesa donde estuviera asignado
-    const mesasSnap = await getDocs(collection(db, 'bodas', boda.id, 'mesas'))
-    for (const mesaDoc of mesasSnap.docs) {
-      const asignaciones = mesaDoc.data().asignaciones || []
-      if (asignaciones.some(a => a.invitado_id === invitado.id)) {
-        await updateDoc(mesaDoc.ref, {
-          asignaciones: asignaciones.filter(a => a.invitado_id !== invitado.id),
-        })
-      }
-    }
+    // Quitarlo de cualquier mesa donde estuviera asignado (transaccional, ver lib/mesaHelpers.js)
+    await quitarInvitadoDeMesas(boda.id, invitado.id)
 
     await deleteDoc(doc(db, 'bodas', boda.id, 'invitados', invitado.id))
     cargarInvitados()
@@ -108,15 +124,8 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
     // por su cuenta desde la invitación pública — si el admin lo cambiaba
     // manualmente desde este panel, la mesa nunca se actualizaba y podía
     // quedar un invitado "no va" sentado en una mesa como si nada.
-    const mesasSnap = await getDocs(collection(db, 'bodas', boda.id, 'mesas'))
-    for (const mesaDoc of mesasSnap.docs) {
-      const asignaciones = mesaDoc.data().asignaciones || []
-      if (asignaciones.some(a => a.invitado_id === invitado.id)) {
-        await updateDoc(mesaDoc.ref, {
-          asignaciones: asignaciones.filter(a => a.invitado_id !== invitado.id),
-        })
-      }
-    }
+    // Ahora centralizado y transaccional en lib/mesaHelpers.js.
+    await quitarInvitadoDeMesas(boda.id, invitado.id)
 
     cargarInvitados()
   }
@@ -251,18 +260,31 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
       </div>
 
       {avisoCambioPases && (
-        <div style={{
-          background: 'var(--color-coral-light)', color: 'var(--color-coral-text)',
-          borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 13,
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10,
-        }}>
-          <span>{avisoCambioPases}</span>
-          <button
-            onClick={() => setAvisoCambioPases(null)}
-            style={{ background: 'none', border: 'none', color: 'var(--color-coral-text)', cursor: 'pointer', fontSize: 13, flexShrink: 0 }}
-          >
-            ✕
-          </button>
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(28,28,28,0.35)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1000, padding: '1.5rem',
+          }}
+        >
+          <div style={{
+            background: '#fff', borderRadius: 14, padding: '1.75rem',
+            maxWidth: 420, width: '100%', boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
+            textAlign: 'center',
+          }}>
+            <p style={{ fontSize: 14, color: 'var(--color-text-primary)', margin: '0 0 1.25rem', lineHeight: 1.5 }}>
+              {avisoCambioPases}
+            </p>
+            <button
+              onClick={() => setAvisoCambioPases(null)}
+              style={{
+                background: 'var(--color-sage)', color: '#fff', border: 'none',
+                borderRadius: 8, padding: '8px 28px', fontSize: 14, cursor: 'pointer',
+              }}
+            >
+              OK
+            </button>
+          </div>
         </div>
       )}
 
@@ -392,12 +414,15 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
                     onChange={e => setInvitadoEditando({ ...invitadoEditando, telefono: e.target.value })}
                     style={{ ...campoEstilo, marginBottom: 10 }}
                   />
+                  {errorEdicion && (
+                    <p style={{ fontSize: 12, color: 'var(--color-coral-text)', margin: '0 0 10px' }}>{errorEdicion}</p>
+                  )}
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button type="submit" style={{ background: 'var(--color-sage)', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 13 }}>
                       Guardar
                     </button>
                     <button
-                      type="button" onClick={() => setInvitadoEditando(null)}
+                      type="button" onClick={() => { setInvitadoEditando(null); setErrorEdicion(null) }}
                       style={{ background: 'transparent', border: '0.5px solid var(--color-border)', borderRadius: 8, padding: '6px 14px', fontSize: 13, color: 'var(--color-text-secondary)' }}
                     >
                       Cancelar

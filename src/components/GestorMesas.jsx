@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
+import { asignarInvitadoAMesa, quitarDeMesaEspecifica } from '../lib/mesaHelpers'
 
 export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
   const [invitados, setInvitados] = useState([])
@@ -11,6 +12,7 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
   const [capacidadMesa, setCapacidadMesa] = useState(8)
   const [invitadoArrastrado, setInvitadoArrastrado] = useState(null)
   const [mesaEditando, setMesaEditando] = useState(null)
+  const [procesando, setProcesando] = useState(false)
 
   useEffect(() => {
     cargarTodo()
@@ -50,34 +52,33 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
   const noConfirmados = invitadosLibres.filter(i => i.estado_rsvp === 'no_confirmado')
 
   async function soltarEnMesa(mesa) {
-    if (!invitadoArrastrado) return
+    if (!invitadoArrastrado || procesando) return
+    setProcesando(true)
 
-    const lugaresQueOcupa = invitadoArrastrado.pases_confirmados ?? invitadoArrastrado.pases_asignados ?? 1
-    const ocupadosActuales = mesa.asignaciones.reduce((acc, a) => acc + (a.lugares_ocupados || 0), 0)
+    try {
+      // Primer intento sin forzar: si excede capacidad, la transacción nos
+      // avisa sin escribir nada todavía.
+      let resultado = await asignarInvitadoAMesa(boda.id, mesa.id, invitadoArrastrado, false)
 
-    if (ocupadosActuales + lugaresQueOcupa > mesa.capacidad) {
-      const continuar = window.confirm(
-        `Esta mesa tiene capacidad para ${mesa.capacidad} y ya hay ${ocupadosActuales} ocupados. ` +
-        `Agregar a "${invitadoArrastrado.nombre_familia}" (${lugaresQueOcupa}) va a exceder el límite. ¿Agregar de todas formas?`
-      )
-      if (!continuar) {
-        setInvitadoArrastrado(null)
-        return
+      if (!resultado.ok && resultado.motivo === 'excede_capacidad') {
+        const continuar = window.confirm(
+          `Esta mesa tiene capacidad para ${resultado.capacidad} y ya hay ${resultado.ocupados} ocupados. ` +
+          `Agregar a "${invitadoArrastrado.nombre_familia}" va a exceder el límite. ¿Agregar de todas formas?`
+        )
+        if (continuar) {
+          resultado = await asignarInvitadoAMesa(boda.id, mesa.id, invitadoArrastrado, true)
+        }
       }
+
+      // Si motivo === 'ya_asignado', es un doble-submit (doble clic/soltar
+      // duplicado): no hacemos nada, el invitado ya quedó en la mesa desde
+      // el intento anterior. Esto es justo lo que evita el duplicado.
+
+      setInvitadoArrastrado(null)
+      cargarTodo()
+    } finally {
+      setProcesando(false)
     }
-
-    const nuevasAsignaciones = [
-      ...mesa.asignaciones,
-      {
-        invitado_id: invitadoArrastrado.id,
-        nombre_familia: invitadoArrastrado.nombre_familia,
-        lugares_ocupados: lugaresQueOcupa,
-      },
-    ]
-
-    await updateDoc(doc(db, 'bodas', boda.id, 'mesas', mesa.id), { asignaciones: nuevasAsignaciones })
-    setInvitadoArrastrado(null)
-    cargarTodo()
   }
 
   async function guardarEdicionMesa(e) {
@@ -104,8 +105,7 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
   }
 
   async function quitarDeMesa(mesa, invitadoId) {
-    const nuevasAsignaciones = mesa.asignaciones.filter(a => a.invitado_id !== invitadoId)
-    await updateDoc(doc(db, 'bodas', boda.id, 'mesas', mesa.id), { asignaciones: nuevasAsignaciones })
+    await quitarDeMesaEspecifica(boda.id, mesa.id, invitadoId)
     cargarTodo()
   }
 
@@ -232,7 +232,8 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
                     border: invitadoArrastrado ? '1.5px dashed var(--color-sage)' : '0.5px solid var(--color-border)',
                     borderRadius: 14, padding: '14px 16px', minHeight: 120,
                     boxShadow: '0 1px 2px rgba(28,28,28,0.04)',
-                    cursor: invitadoArrastrado ? 'pointer' : 'default',
+                    cursor: invitadoArrastrado ? (procesando ? 'wait' : 'pointer') : 'default',
+                    opacity: procesando ? 0.7 : 1,
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
@@ -269,20 +270,28 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
                       background: lleno ? 'var(--color-coral)' : 'var(--color-sage)',
                     }} />
                   </div>
-                  {mesa.asignaciones.map(a => (
-                    <div key={a.invitado_id} style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      fontSize: 12, background: 'var(--color-surface-muted)', borderRadius: 8, padding: '6px 10px', marginBottom: 4,
-                    }}>
-                      <span>{a.nombre_familia} ({a.lugares_ocupados})</span>
-                      <button
-                        onClick={() => quitarDeMesa(mesa, a.invitado_id)}
-                        style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 12 }}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
+                  {mesa.asignaciones.map(a => {
+                    const invitadoActual = invitados.find(i => i.id === a.invitado_id)
+                    const esPendiente = invitadoActual?.estado_rsvp === 'pendiente' || !invitadoActual?.estado_rsvp
+                    return (
+                      <div key={a.invitado_id} style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        fontSize: 12, background: 'var(--color-surface-muted)', borderRadius: 8, padding: '6px 10px', marginBottom: 4,
+                        opacity: esPendiente ? 0.55 : 1,
+                      }}>
+                        <span style={{ color: esPendiente ? 'var(--color-text-muted)' : 'inherit' }}>
+                          {a.nombre_familia} ({a.lugares_ocupados})
+                          {esPendiente && <span style={{ fontSize: 10, marginLeft: 6, fontStyle: 'italic' }}>sin confirmar</span>}
+                        </span>
+                        <button
+                          onClick={() => quitarDeMesa(mesa, a.invitado_id)}
+                          style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 12 }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )
+                  })}
                   {mesa.asignaciones.length === 0 && (
                     <p style={{ fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center', marginTop: 20 }}>Suelta aquí</p>
                   )}
