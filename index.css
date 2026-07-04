@@ -1,0 +1,52 @@
+:root {
+  /* ============================================
+     PALETA ARIA — dorado / negro / petróleo / beige
+     Reemplaza la paleta sage/coral anterior.
+     Los NOMBRES de las variables se mantienen iguales
+     a propósito, para no tener que tocar los demás
+     componentes (todos usan var(--color-sage), etc.)
+     ============================================ */
+  --color-bg: #F8F8F8;
+  --color-surface: #FFFFFF;
+  --color-surface-muted: #F1EEE5;
+  --color-border: #EAE5D8;
+  --color-text-primary: #1C1C1C;
+  --color-text-secondary: #6B6558;
+  --color-text-muted: #A39C88;
+
+  /* "sage" ahora es el petróleo (acento frío / info / progreso) */
+  --color-sage: #3E606F;
+  --color-sage-light: #E4EBEC;
+  --color-sage-text: #2C4550;
+
+  /* "coral" ahora es el dorado (acento cálido / CTA / alertas suaves) */
+  --color-coral: #D4AF37;
+  --color-coral-light: #EDE3D2;
+  --color-coral-text: #8A6D22;
+
+  /* Nuevo: negro profundo, para superficies de alto contraste
+     (tarjetas de énfasis, botones primarios) */
+  --color-ink: #1C1C1C;
+  --color-ink-text: #F8F8F8;
+
+  --font-display: 'Cormorant Garamond', serif;
+  --font-sans: 'Inter', sans-serif;
+
+  --radius: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+}
+
+button {
+  font-family: var(--font-sans);
+  cursor: pointer;
+}
