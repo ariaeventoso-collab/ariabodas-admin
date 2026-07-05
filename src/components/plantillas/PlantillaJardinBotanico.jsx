@@ -20,7 +20,16 @@ function formatearHora(hora24) {
 
 // PLANTILLA: Jardín Botánico
 // Diseñada en Lovable. Paleta salvia/dorado/lino, tipografía Playfair Display.
-export default function PlantillaJardinBotanico({ boda }) {
+//
+// modoPreview: cuando viene de PublicInvitation.jsx con ?preview=true (usado
+// desde el landing ariabodas.com para mostrar ejemplos reales de boda sin
+// exponer datos sensibles). En este modo:
+// 1. El buscador de invitados NO llama a la Cloud Function real (evita
+//    exponer nombres reales de invitados de la boda a cualquier visitante).
+// 2. El RSVP se muestra pero no permite enviar confirmación real.
+// 3. Los links de mapa/ubicación del itinerario se ocultan.
+// 4. Se muestra un aviso discreto de "vista de muestra".
+export default function PlantillaJardinBotanico({ boda, modoPreview = false }) {
   const [opened, setOpened] = useState(false)
 
   const monogram = `${boda.nombre_novio_1?.[0] || ''}&${boda.nombre_novio_2?.[0] || ''}`
@@ -32,16 +41,28 @@ export default function PlantillaJardinBotanico({ boda }) {
   return (
     <main className="plantilla-jardin-botanico min-h-screen font-sans text-charcoal selection:bg-gold/20">
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+      {modoPreview && <PreviewBanner />}
       {!opened && <EnvelopeGate boda={boda} monogram={monogram} onOpen={() => setOpened(true)} />}
       <Cover boda={boda} monogram={monogram} dateLabel={dateLabel} />
-      <SearchAndRsvp boda={boda} />
+      <SearchAndRsvp boda={boda} modoPreview={modoPreview} />
       {fecha && <Countdown fecha={fecha} />}
-      {boda.itinerario?.length > 0 && <Itinerary eventos={boda.itinerario} />}
+      {boda.itinerario?.length > 0 && <Itinerary eventos={boda.itinerario} modoPreview={modoPreview} />}
       {boda.regalos?.tipo?.length > 0 && <Gifts regalos={boda.regalos} />}
       <Gallery fotos={boda.galeria_fotos} />
       {boda.codigo_vestimenta && <DressCode texto={boda.codigo_vestimenta} />}
       <Notes boda={boda} monogram={monogram} />
     </main>
+  )
+}
+
+// ============================================
+// Aviso de vista de muestra
+// ============================================
+function PreviewBanner() {
+  return (
+    <div className="fixed top-0 inset-x-0 z-[60] bg-charcoal text-linen text-center py-2 text-[11px] uppercase tracking-[0.2em]">
+      Vista de muestra — invitación real, datos de contacto y ubicación ocultos
+    </div>
   )
 }
 
@@ -114,13 +135,14 @@ function Cover({ boda, monogram, dateLabel }) {
 // Buscador + tarjeta de invitado + RSVP (unidos, ya que el RSVP
 // depende de saber quién eres)
 // ============================================
-function SearchAndRsvp({ boda }) {
+function SearchAndRsvp({ boda, modoPreview }) {
   const [query, setQuery] = useState('')
   const [resultados, setResultados] = useState(null)
   const [buscando, setBuscando] = useState(false)
   const [seleccionado, setSeleccionado] = useState(null)
 
   useEffect(() => {
+    if (modoPreview) return // nunca consultar invitados reales en preview
     if (seleccionado) return
     if (!query.trim()) { setResultados(null); return }
     const espera = setTimeout(async () => {
@@ -135,7 +157,7 @@ function SearchAndRsvp({ boda }) {
       setBuscando(false)
     }, 350)
     return () => clearTimeout(espera)
-  }, [query, seleccionado])
+  }, [query, seleccionado, modoPreview])
 
   function elegir(inv) {
     setSeleccionado(inv)
@@ -147,6 +169,20 @@ function SearchAndRsvp({ boda }) {
     setSeleccionado(null)
     setQuery('')
     setResultados(null)
+  }
+
+  if (modoPreview) {
+    return (
+      <section className="mx-auto max-w-xl px-6 py-24 text-center">
+        <span className="mb-3 block text-[10px] uppercase tracking-[0.4em] text-gold">Personalizada para ti</span>
+        <h2 className="mb-8 font-serif text-3xl italic">Busca tu invitación</h2>
+        <div className="rounded-sm border border-sage/15 bg-white p-10 text-sm italic text-charcoal/50 shadow-soft">
+          En la invitación real, cada invitado busca su nombre aquí y ve su
+          número de pases y el formulario de confirmación personalizado. Esta
+          parte queda deshabilitada en la vista de muestra.
+        </div>
+      </section>
+    )
   }
 
   return (
@@ -357,7 +393,7 @@ function Countdown({ fecha }) {
 // ============================================
 // Itinerario
 // ============================================
-function Itinerary({ eventos }) {
+function Itinerary({ eventos, modoPreview }) {
   return (
     <section className="bg-sage-deep px-6 py-24 text-linen">
       <div className="mx-auto max-w-xl">
@@ -368,8 +404,12 @@ function Itinerary({ eventos }) {
               <span className="shrink-0 font-serif text-2xl text-gold">{formatearHora(e.hora)}</span>
               <div>
                 <h4 className="mb-1 text-lg font-medium uppercase tracking-wider">{e.nombre_evento}</h4>
-                <p className="mb-4 text-sm text-linen/60">{e.lugar}</p>
-                {e.link_mapa && (
+                {/* En modo preview se oculta el nombre del lugar y el link de
+                    mapa — son datos sensibles de ubicación real */}
+                <p className="mb-4 text-sm text-linen/60">
+                  {modoPreview ? 'Ubicación disponible en la invitación real' : e.lugar}
+                </p>
+                {e.link_mapa && !modoPreview && (
                   <a href={e.link_mapa} target="_blank" rel="noreferrer" className="border-b border-gold/40 pb-1 text-xs uppercase tracking-widest text-gold">
                     Ver mapa
                   </a>
