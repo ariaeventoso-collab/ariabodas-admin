@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { collection, query, where, getDocs } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
 import { plantillas, plantillaPorDefecto } from './plantillas'
@@ -9,9 +9,16 @@ import { plantillas, plantillaPorDefecto } from './plantillas'
 // El diseño real vive en /plantillas/PlantillaX.jsx
 export default function PublicInvitation() {
   const { slug } = useParams()
+  const [searchParams] = useSearchParams()
   const [boda, setBoda] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
+
+  // Modo preview: usado desde el landing (ariabodas.com) para mostrar
+  // ejemplos de invitaciones reales sin exponer datos sensibles (ubicación
+  // exacta, mapa, o permitir que cualquiera confirme asistencia como si
+  // fuera un invitado real). Se activa con ?preview=true en la URL.
+  const modoPreview = searchParams.get('preview') === 'true'
 
   useEffect(() => {
     cargarBoda()
@@ -44,7 +51,13 @@ export default function PublicInvitation() {
   const idPlantilla = boda.plantilla_id || plantillaPorDefecto
   const Plantilla = plantillas[idPlantilla] || plantillas[plantillaPorDefecto]
 
-  return <Plantilla boda={boda} />
+  // IMPORTANTE: pasar modoPreview a la plantilla no es suficiente por sí
+  // solo — cada PlantillaX.jsx debe revisar este flag para:
+  // 1. Ocultar o reemplazar links de mapa/ubicación (Google Maps, Waze, etc.)
+  // 2. Deshabilitar el envío real del formulario de RSVP
+  // 3. Mostrar un aviso tipo "Esta es una vista de muestra"
+  // Sin ese trabajo en la plantilla, este flag no bloquea nada por sí mismo.
+  return <Plantilla boda={boda} modoPreview={modoPreview} />
 }
 
 function PantallaCentrada({ children }) {
