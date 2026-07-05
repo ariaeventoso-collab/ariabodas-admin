@@ -3,7 +3,6 @@ import { httpsCallable } from 'firebase/functions'
 import { functions } from '../../lib/firebaseClient'
 import './jardin-botanico.css'
 
-const HERO_DEFECTO = '/plantilla-jardin/hero-botanical.jpg'
 const GALERIA_DEFECTO = [
   { src: '/plantilla-jardin/gallery-1.jpg', h: 'aspect-[2/3]' },
   { src: '/plantilla-jardin/gallery-2.jpg', h: 'aspect-square md:translate-y-12' },
@@ -18,17 +17,30 @@ function formatearHora(hora24) {
   return `${h12}:${String(m).padStart(2, '0')} ${periodo}`
 }
 
+// Genera una portada automática única por boda cuando no hay imagen_fondo_url
+// cargada en Diseño: un monograma elegante con las iniciales de los novios,
+// usando los colores configurados para esa boda específica. No requiere
+// ninguna subida manual, y es el MISMO criterio que usa el landing
+// (ariabodas.com) para mostrar la tarjeta de esta boda ahí también.
+function generarMonogramaSVG(boda) {
+  const inicial1 = boda.nombre_novio_1?.[0]?.toUpperCase() || ''
+  const inicial2 = boda.nombre_novio_2?.[0]?.toUpperCase() || ''
+  const fondo = boda.colores?.secundario || '#ede3d2'
+  const acento = boda.colores?.primario || '#3e606f'
+
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="900" height="700" viewBox="0 0 900 700">
+      <rect width="900" height="700" fill="${fondo}" />
+      <circle cx="450" cy="320" r="110" fill="none" stroke="${acento}" stroke-width="1.5" opacity="0.6" />
+      <text x="450" y="350" font-family="Georgia, serif" font-style="italic" font-size="86" fill="${acento}" text-anchor="middle">${inicial1}&amp;${inicial2}</text>
+      <text x="450" y="520" font-family="Georgia, serif" font-size="20" letter-spacing="6" fill="${acento}" text-anchor="middle" opacity="0.7">ARIABODAS</text>
+    </svg>
+  `.trim()
+
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
+}
+
 // PLANTILLA: Jardín Botánico
-// Diseñada en Lovable. Paleta salvia/dorado/lino, tipografía Playfair Display.
-//
-// modoPreview: cuando viene de PublicInvitation.jsx con ?preview=true (usado
-// desde el landing ariabodas.com para mostrar ejemplos reales de boda sin
-// exponer datos sensibles). En este modo:
-// 1. El buscador de invitados NO llama a la Cloud Function real (evita
-//    exponer nombres reales de invitados de la boda a cualquier visitante).
-// 2. El RSVP se muestra pero no permite enviar confirmación real.
-// 3. Los links de mapa/ubicación del itinerario se ocultan.
-// 4. Se muestra un aviso discreto de "vista de muestra".
 export default function PlantillaJardinBotanico({ boda, modoPreview = false }) {
   const [opened, setOpened] = useState(false)
 
@@ -55,9 +67,6 @@ export default function PlantillaJardinBotanico({ boda, modoPreview = false }) {
   )
 }
 
-// ============================================
-// Aviso de vista de muestra
-// ============================================
 function PreviewBanner() {
   return (
     <div className="fixed top-0 inset-x-0 z-[60] bg-charcoal text-linen text-center py-2 text-[11px] uppercase tracking-[0.2em]">
@@ -66,9 +75,6 @@ function PreviewBanner() {
   )
 }
 
-// ============================================
-// Sobre animado
-// ============================================
 function EnvelopeGate({ boda, monogram, onOpen }) {
   const [opening, setOpening] = useState(false)
   const handle = () => {
@@ -100,9 +106,6 @@ function EnvelopeGate({ boda, monogram, onOpen }) {
   )
 }
 
-// ============================================
-// Portada
-// ============================================
 function Cover({ boda, monogram, dateLabel }) {
   return (
     <header className="relative flex min-h-screen flex-col items-center justify-center px-6 py-24 text-center">
@@ -122,7 +125,7 @@ function Cover({ boda, monogram, dateLabel }) {
       </div>
       <div className="w-full max-w-md overflow-hidden rounded-t-full bg-sage/5 outline outline-1 -outline-offset-1 outline-charcoal/5">
         <img
-          src={boda.imagen_fondo_url || HERO_DEFECTO}
+          src={boda.imagen_fondo_url || generarMonogramaSVG(boda)}
           alt="Portada"
           className="h-full w-full object-cover"
         />
@@ -131,10 +134,6 @@ function Cover({ boda, monogram, dateLabel }) {
   )
 }
 
-// ============================================
-// Buscador + tarjeta de invitado + RSVP (unidos, ya que el RSVP
-// depende de saber quién eres)
-// ============================================
 function SearchAndRsvp({ boda, modoPreview }) {
   const [query, setQuery] = useState('')
   const [resultados, setResultados] = useState(null)
@@ -142,7 +141,7 @@ function SearchAndRsvp({ boda, modoPreview }) {
   const [seleccionado, setSeleccionado] = useState(null)
 
   useEffect(() => {
-    if (modoPreview) return // nunca consultar invitados reales en preview
+    if (modoPreview) return
     if (seleccionado) return
     if (!query.trim()) { setResultados(null); return }
     const espera = setTimeout(async () => {
@@ -268,7 +267,6 @@ function GuestCardYRsvp({ boda, invitado, onBuscarDeNuevo }) {
 
   return (
     <div className="text-left">
-      {/* Tarjeta de bienvenida */}
       <div className="mb-8 rounded-sm border border-sage/10 bg-white p-10 text-center shadow-card">
         <span className="mb-4 block text-xs uppercase tracking-[0.3em] text-gold">Bienvenido</span>
         <h3 className="mb-2 font-serif text-2xl">{invitado.nombre_familia}</h3>
@@ -283,7 +281,6 @@ function GuestCardYRsvp({ boda, invitado, onBuscarDeNuevo }) {
         </div>
       </div>
 
-      {/* RSVP */}
       <div className="mx-auto max-w-xl text-center">
         <h2 className="mb-4 font-serif text-3xl italic">Confirmación</h2>
         <div className="mb-8 flex flex-col gap-3">
@@ -347,9 +344,6 @@ function GuestCardYRsvp({ boda, invitado, onBuscarDeNuevo }) {
   )
 }
 
-// ============================================
-// Countdown
-// ============================================
 function useCountdown(target) {
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
@@ -390,9 +384,6 @@ function Countdown({ fecha }) {
   )
 }
 
-// ============================================
-// Itinerario
-// ============================================
 function Itinerary({ eventos, modoPreview }) {
   return (
     <section className="bg-sage-deep px-6 py-24 text-linen">
@@ -404,8 +395,6 @@ function Itinerary({ eventos, modoPreview }) {
               <span className="shrink-0 font-serif text-2xl text-gold">{formatearHora(e.hora)}</span>
               <div>
                 <h4 className="mb-1 text-lg font-medium uppercase tracking-wider">{e.nombre_evento}</h4>
-                {/* En modo preview se oculta el nombre del lugar y el link de
-                    mapa — son datos sensibles de ubicación real */}
                 <p className="mb-4 text-sm text-linen/60">
                   {modoPreview ? 'Ubicación disponible en la invitación real' : e.lugar}
                 </p>
@@ -423,9 +412,6 @@ function Itinerary({ eventos, modoPreview }) {
   )
 }
 
-// ============================================
-// Regalos
-// ============================================
 function Gifts({ regalos }) {
   const tipos = regalos.tipo || []
   return (
@@ -463,9 +449,6 @@ function Gifts({ regalos }) {
   )
 }
 
-// ============================================
-// Galería
-// ============================================
 function Gallery({ fotos }) {
   const items = fotos?.length > 0
     ? fotos.map((src, i) => ({ src, h: GALERIA_DEFECTO[i % 3].h }))
@@ -490,9 +473,6 @@ function Gallery({ fotos }) {
   )
 }
 
-// ============================================
-// Código de vestimenta
-// ============================================
 function DressCode({ texto }) {
   return (
     <section className="bg-sage/5 px-6 py-24 text-center">
@@ -505,9 +485,6 @@ function DressCode({ texto }) {
   )
 }
 
-// ============================================
-// Notas / pie de página
-// ============================================
 function Notes({ boda, monogram }) {
   return (
     <footer className="px-6 pb-24 pt-16 text-center">
