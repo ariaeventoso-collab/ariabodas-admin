@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { collection, getDocs, query, where } from 'firebase/firestore'
+import { collection, getDocs, query, where, doc, updateDoc } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
 import GestionInvitados from './GestionInvitados'
 import GestorMesas from './GestorMesas'
@@ -94,6 +94,13 @@ export default function AdminPanel() {
     }
 
     setCargando(false)
+  }
+
+  async function toggleDestacadaEnLanding(boda, e) {
+    e.stopPropagation() // no abrir la boda al hacer click en el checkbox
+    const nuevoValor = !boda.destacada_en_landing
+    await updateDoc(doc(db, 'bodas', boda.id), { destacada_en_landing: nuevoValor })
+    setBodas(prev => prev.map(b => b.id === boda.id ? { ...b, destacada_en_landing: nuevoValor } : b))
   }
 
   const totalBodas = bodas.length
@@ -319,6 +326,22 @@ export default function AdminPanel() {
                   </div>
                   <span style={{ fontSize: 11, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>{boda.totalMesas} mesas</span>
                 </div>
+                <label
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, paddingTop: 10,
+                    borderTop: '0.5px solid var(--color-surface-muted)', fontSize: 11,
+                    color: 'var(--color-text-secondary)', cursor: 'pointer',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={!!boda.destacada_en_landing}
+                    onChange={(e) => toggleDestacadaEnLanding(boda, e)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  Destacar en landing (ariabodas.com)
+                </label>
               </div>
             )
           })}
