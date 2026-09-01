@@ -81,6 +81,8 @@ export default function PlantillaPaolaYJorge({ boda, modoPreview = false }) {
       <Frase />
       <Countdown />
 
+      <SearchAndRsvp boda={boda} modoPreview={modoPreview} />
+
       {(fotos[0] || fotos[1]) && <GaleriaPar fotos={[fotos[0], fotos[1]]} />}
 
       <Itinerario modoPreview={modoPreview} />
@@ -91,8 +93,6 @@ export default function PlantillaPaolaYJorge({ boda, modoPreview = false }) {
       <Regalos />
 
       {fotos[3] && <FotoAncha src={fotos[3]} alto="h-[60vh]" />}
-
-      <SearchAndRsvp boda={boda} modoPreview={modoPreview} />
 
       <Footer />
     </main>
@@ -521,10 +521,10 @@ function SearchAndRsvp({ boda, modoPreview }) {
 
   if (modoPreview) {
     return (
-      <section className="mx-auto max-w-2xl px-6 py-24 text-center">
+      <section className="border-y border-border bg-clay/10 px-6 py-20 text-center">
         <Label>Confirmación de asistencia</Label>
-        <h2 className="mt-4 font-display text-4xl sm:text-5xl">¿Nos acompañas?</h2>
-        <div className="mx-auto mt-10 border border-border bg-background p-10 text-sm italic text-muted-foreground">
+        <h2 className="mt-4 font-display text-5xl sm:text-6xl">¿Nos acompañas?</h2>
+        <div className="mx-auto mt-10 max-w-2xl border border-border bg-background p-10 text-sm italic text-muted-foreground">
           En la invitación real, cada invitado busca su nombre aquí y confirma su asistencia.
           Esta parte queda deshabilitada en la vista de muestra.
         </div>
@@ -533,21 +533,21 @@ function SearchAndRsvp({ boda, modoPreview }) {
   }
 
   return (
-    <section className="mx-auto max-w-2xl px-6 py-24 text-center">
+    <section className="border-y border-border bg-clay/10 px-6 py-20 text-center">
       <Label>Confirmación de asistencia</Label>
-      <h2 className="mt-4 font-display text-4xl sm:text-5xl">¿Nos acompañas?</h2>
-      <p className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-muted-foreground">
+      <h2 className="mt-4 font-display text-5xl sm:text-6xl">¿Nos acompañas?</h2>
+      <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-foreground/80">
         Busca tu nombre o familia para confirmar tu lugar en esta celebración.
       </p>
 
       {!seleccionado && (
-        <div className="relative mt-10 text-left">
+        <div className="relative mx-auto mt-10 max-w-xl text-left">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             type="text"
             placeholder="Escribe tu nombre o familia..."
-            className="w-full border-b border-border bg-transparent px-2 py-4 text-center italic transition-colors placeholder:text-muted-foreground focus:border-clay focus:outline-none"
+            className="w-full border-b-2 border-clay/60 bg-transparent px-2 py-5 text-center font-display text-xl italic transition-colors placeholder:text-muted-foreground focus:border-clay focus:outline-none"
           />
           {query.trim() && (
             <div className="absolute left-0 right-0 top-full z-10 mt-1 border border-border bg-background shadow-lg">
