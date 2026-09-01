@@ -7,6 +7,8 @@ import { db } from '../lib/firebaseClient'
 const PLANTILLAS_DISPONIBLES = [
   { id: 'clasica', nombre: 'Clásica — sobre animado' },
   { id: 'jardin_botanico', nombre: 'Jardín Botánico — salvia y dorado' },
+  { id: 'galeria_elegante', nombre: 'Galería Elegante — arcilla y fotografía' },
+  { id: 'paola_y_jorge', nombre: 'Paola y Jorge — sobre de kraft (dedicada)' },
 ]
 
 const TIPOS_REGALO = [
