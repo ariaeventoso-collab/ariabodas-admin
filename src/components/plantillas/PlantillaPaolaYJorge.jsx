@@ -542,12 +542,24 @@ function SearchAndRsvp({ boda, modoPreview }) {
 
       {!seleccionado && (
         <div className="relative mx-auto mt-10 max-w-xl text-left">
+          <svg
+            className="pointer-events-none absolute left-1 top-1/2 h-5 w-5 -translate-y-1/2 text-clay/70"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             type="text"
             placeholder="Escribe tu nombre o familia..."
-            className="w-full border-b-2 border-clay/60 bg-transparent px-2 py-5 text-center font-display text-xl italic transition-colors placeholder:text-muted-foreground focus:border-clay focus:outline-none"
+            className="w-full border-b-2 border-clay/60 bg-transparent py-5 pl-8 pr-2 text-center font-display text-xl italic transition-colors placeholder:text-muted-foreground focus:border-clay focus:outline-none"
           />
           {query.trim() && (
             <div className="absolute left-0 right-0 top-full z-10 mt-1 border border-border bg-background shadow-lg">
