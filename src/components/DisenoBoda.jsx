@@ -25,6 +25,7 @@ export default function DisenoBoda({ boda, onGuardado }) {
   const [colorPrimario, setColorPrimario] = useState(boda.colores?.primario || '#7C8B6F')
   const [colorSecundario, setColorSecundario] = useState(boda.colores?.secundario || '#E7ECE1')
   const [imagenFondo, setImagenFondo] = useState(boda.imagen_fondo_url || '')
+  const [galeriaFotos, setGaleriaFotos] = useState((boda.galeria_fotos || []).join('\n'))
 
   const [itinerario, setItinerario] = useState(boda.itinerario || [])
   const [tiposRegalo, setTiposRegalo] = useState(boda.regalos?.tipo || [])
@@ -63,6 +64,7 @@ export default function DisenoBoda({ boda, onGuardado }) {
       plantilla_id: plantillaId,
       colores: { primario: colorPrimario, secundario: colorSecundario },
       imagen_fondo_url: imagenFondo.trim(),
+      galeria_fotos: galeriaFotos.split('\n').map(u => u.trim()).filter(Boolean),
       itinerario: itinerario.filter(ev => ev.nombre_evento.trim()),
       regalos: {
         tipo: tiposRegalo,
@@ -110,6 +112,15 @@ export default function DisenoBoda({ boda, onGuardado }) {
         </div>
         <label style={etiquetaEstilo}>URL de imagen de fondo (opcional)</label>
         <input type="text" value={imagenFondo} onChange={e => setImagenFondo(e.target.value)} placeholder="https://..." style={campoEstilo} />
+
+        <label style={{ ...etiquetaEstilo, marginTop: 10 }}>Galería de fotos (opcional, una URL por línea)</label>
+        <textarea
+          value={galeriaFotos}
+          onChange={e => setGaleriaFotos(e.target.value)}
+          placeholder={'https://...foto1.jpg\nhttps://...foto2.jpg'}
+          rows={5}
+          style={{ ...campoEstilo, resize: 'vertical', fontFamily: 'inherit' }}
+        />
       </Bloque>
 
       {/* ---- Itinerario ---- */}
