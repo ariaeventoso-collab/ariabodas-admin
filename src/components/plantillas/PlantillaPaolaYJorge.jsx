@@ -71,10 +71,10 @@ export default function PlantillaPaolaYJorge({ boda, modoPreview = false }) {
       {(fotos[0] || fotos[1]) && <GaleriaPar fotos={[fotos[0], fotos[1]]} />}
 
       <Itinerario modoPreview={modoPreview} />
+      <Vestimenta />
 
       {fotos[2] && <FotoAncha src={fotos[2]} />}
 
-      <Vestimenta />
       <PadresYPadrinos />
       <Regalos modoPreview={modoPreview} />
 
