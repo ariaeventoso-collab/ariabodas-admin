@@ -74,12 +74,11 @@ export default function PlantillaPaolaYJorge({ boda, modoPreview = false }) {
       {fotos[2] && <FotoAncha src={fotos[2]} />}
 
       <Vestimenta />
+      <SearchAndRsvp boda={boda} modoPreview={modoPreview} />
       <PadresYPadrinos />
       <Regalos modoPreview={modoPreview} />
 
       {fotos[3] && <FotoAncha src={fotos[3]} alto="h-[60vh]" />}
-
-      <SearchAndRsvp boda={boda} modoPreview={modoPreview} />
 
       <Footer />
     </main>
@@ -629,9 +628,9 @@ function SearchAndRsvp({ boda, modoPreview }) {
               onChange={(e) => setQuery(e.target.value)}
               type="text"
               placeholder="Pon tu apellido o nombre..."
-              className="w-full border-2 border-clay bg-transparent px-4 py-4 pr-12 text-center italic transition-colors placeholder:text-muted-foreground focus:border-clay focus:outline-none focus:ring-2 focus:ring-clay focus:ring-opacity-20"
+              className="w-full border-b border-border bg-transparent px-2 py-4 text-center italic transition-colors placeholder:text-muted-foreground focus:border-clay focus:outline-none"
             />
-            <span className="absolute right-4 text-clay text-xl pointer-events-none">🔍</span>
+            <span className="absolute right-2 text-muted-foreground text-sm pointer-events-none opacity-60">🔍</span>
           </div>
           {query.trim() && (
             <div className="absolute left-0 right-0 top-full z-10 mt-1 border border-border bg-background shadow-lg">
