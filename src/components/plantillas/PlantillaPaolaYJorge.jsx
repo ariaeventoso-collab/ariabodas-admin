@@ -622,14 +622,17 @@ function SearchAndRsvp({ boda, modoPreview }) {
       </p>
 
       {!seleccionado && (
-        <div className="relative mt-10 text-left">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            type="text"
-            placeholder="Pon tu apellido o nombre..."
-            className="w-full border-b border-border bg-transparent px-2 py-4 text-center italic transition-colors placeholder:text-muted-foreground focus:border-clay focus:outline-none"
-          />
+        <div className="relative mt-10">
+          <div className="relative flex items-center">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              type="text"
+              placeholder="Pon tu apellido o nombre..."
+              className="w-full border-2 border-clay bg-transparent px-4 py-4 pr-12 text-center italic transition-colors placeholder:text-muted-foreground focus:border-clay focus:outline-none focus:ring-2 focus:ring-clay focus:ring-opacity-20"
+            />
+            <span className="absolute right-4 text-clay text-xl pointer-events-none">🔍</span>
+          </div>
           {query.trim() && (
             <div className="absolute left-0 right-0 top-full z-10 mt-1 border border-border bg-background shadow-lg">
               {buscando && (
