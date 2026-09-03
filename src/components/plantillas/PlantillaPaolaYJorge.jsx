@@ -273,24 +273,6 @@ function Portada({ boda }) {
         className="absolute inset-0 h-full w-full object-cover object-center"
       />
       <div className="absolute inset-0 bg-background/70" />
-      
-      {/* Decorative elements */}
-      <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-background/80 to-transparent" />
-      
-      {/* Decorative wheat stems - left */}
-      <div className="absolute bottom-12 left-6 opacity-40 pointer-events-none">
-        <svg width="80" height="200" viewBox="0 0 20 50" className="text-clay">
-          <path d="M10 0 L10 50 M8 10 L6 8 M8 10 L10 8 M8 15 L6 13 M8 15 L10 13 M8 20 L6 18 M8 20 L10 18 M8 25 L6 23 M8 25 L10 23 M8 30 L6 28 M8 30 L10 28 M12 10 L14 8 M12 10 L10 8 M12 15 L14 13 M12 15 L10 13 M12 20 L14 18 M12 20 L10 18 M12 25 L14 23 M12 25 L10 23 M12 30 L14 28 M12 30 L10 28" stroke="currentColor" strokeWidth="0.5" fill="none"/>
-        </svg>
-      </div>
-      
-      {/* Decorative wheat stems - right */}
-      <div className="absolute bottom-20 right-8 opacity-40 pointer-events-none">
-        <svg width="100" height="220" viewBox="0 0 20 55" className="text-clay">
-          <path d="M10 0 L10 55 M8 12 L6 10 M8 12 L10 10 M8 18 L6 16 M8 18 L10 16 M8 24 L6 22 M8 24 L10 22 M8 30 L6 28 M8 30 L10 28 M8 36 L6 34 M8 36 L10 34 M12 12 L14 10 M12 12 L10 10 M12 18 L14 16 M12 18 L10 16 M12 24 L14 22 M12 24 L10 22 M12 30 L14 28 M12 30 L10 28 M12 36 L14 34 M12 36 L10 34" stroke="currentColor" strokeWidth="0.5" fill="none"/>
-        </svg>
-      </div>
-
       <div className="fade-up relative z-10 px-6 text-center">
         <Label className="font-normal text-foreground">Nos casamos</Label>
         <h1 className="mt-6 font-display text-6xl leading-none text-foreground sm:text-8xl">
@@ -314,31 +296,13 @@ function Portada({ boda }) {
 
 function Frase() {
   return (
-    <section className="relative mx-auto max-w-2xl px-6 py-24 text-center">
-      {/* Decorative top line */}
-      <div className="flex items-center justify-center gap-4 mb-8">
-        <div className="h-px w-12 bg-clay/40" />
-        <svg width="20" height="20" viewBox="0 0 20 20" className="text-clay/40">
-          <circle cx="10" cy="10" r="3" fill="currentColor" />
-        </svg>
-        <div className="h-px w-12 bg-clay/40" />
-      </div>
-      
+    <section className="mx-auto max-w-2xl px-6 py-24 text-center">
       <p className="font-display text-2xl italic leading-relaxed text-foreground sm:text-3xl">
         &ldquo;Y sobre todas estas cosas vístanse de amor, que es el vínculo perfecto.&rdquo;
       </p>
       <p className="mt-6 text-[0.65rem] uppercase tracking-widest-xl text-muted-foreground">
         Colosenses 3:14
       </p>
-      
-      {/* Decorative bottom line */}
-      <div className="flex items-center justify-center gap-4 mt-8">
-        <div className="h-px w-12 bg-clay/40" />
-        <svg width="20" height="20" viewBox="0 0 20 20" className="text-clay/40">
-          <circle cx="10" cy="10" r="3" fill="currentColor" />
-        </svg>
-        <div className="h-px w-12 bg-clay/40" />
-      </div>
     </section>
   )
 }
@@ -364,16 +328,6 @@ function Countdown() {
     <section className="relative overflow-hidden border-y border-border bg-sand/40 py-16">
       <div className="relative mx-auto max-w-3xl px-6 text-center">
         <Label>Faltan</Label>
-        
-        {/* Decorative frame top */}
-        <div className="mt-6 flex items-center justify-center gap-3 mb-8">
-          <div className="h-px w-8 bg-clay/30" />
-          <svg width="16" height="16" viewBox="0 0 16 16" className="text-clay/30">
-            <path d="M2 8 L14 8 M8 2 L8 14" stroke="currentColor" strokeWidth="1" fill="none"/>
-          </svg>
-          <div className="h-px w-8 bg-clay/30" />
-        </div>
-        
         <div className="mt-8 grid grid-cols-4 gap-4">
           {[
             ['Días', c.dias],
@@ -381,11 +335,7 @@ function Countdown() {
             ['Min', c.min],
             ['Seg', c.seg],
           ].map(([l, v]) => (
-            <div key={l} className="relative">
-              {/* Subtle corner decorations */}
-              <div className="absolute -top-2 -left-2 w-3 h-3 border-t border-l border-clay/20" />
-              <div className="absolute -bottom-2 -right-2 w-3 h-3 border-b border-r border-clay/20" />
-              
+            <div key={l}>
               <p className="font-display text-4xl text-foreground sm:text-6xl">
                 {String(v).padStart(2, '0')}
               </p>
@@ -394,15 +344,6 @@ function Countdown() {
               </p>
             </div>
           ))}
-        </div>
-        
-        {/* Decorative frame bottom */}
-        <div className="mt-8 flex items-center justify-center gap-3">
-          <div className="h-px w-8 bg-clay/30" />
-          <svg width="16" height="16" viewBox="0 0 16 16" className="text-clay/30">
-            <circle cx="8" cy="8" r="2" fill="currentColor" />
-          </svg>
-          <div className="h-px w-8 bg-clay/30" />
         </div>
       </div>
     </section>
@@ -440,21 +381,11 @@ function Itinerario({ modoPreview }) {
       </div>
 
       <ol className="mt-12 space-y-10">
-        {ITINERARIO.map((e, idx) => (
+        {ITINERARIO.map((e) => (
           <li
             key={e.titulo}
-            className="relative grid gap-3 border-b border-border pb-10 last:border-0 sm:grid-cols-[7rem_1fr] sm:gap-8"
+            className="grid gap-3 border-b border-border pb-10 last:border-0 sm:grid-cols-[7rem_1fr] sm:gap-8"
           >
-            {/* Timeline decorative dot */}
-            <div className="hidden sm:block absolute left-[3.5rem] top-2">
-              <div className="w-4 h-4 bg-background border-2 border-clay rounded-full" />
-            </div>
-            
-            {/* Timeline connecting line */}
-            {idx < ITINERARIO.length - 1 && (
-              <div className="hidden sm:block absolute left-[calc(3.5rem+0.5rem)] top-6 bottom-0 w-0.5 bg-gradient-to-b from-clay/40 to-transparent" />
-            )}
-            
             <p className="pt-1 text-sm uppercase tracking-[0.22em] text-clay">{e.hora}</p>
             <div>
               <h3 className="font-display text-2xl">{e.titulo}</h3>
@@ -593,26 +524,9 @@ function PadresYPadrinos() {
 
 function Regalos({ modoPreview }) {
   return (
-    <section className="border-y border-border bg-sand/40 py-24 relative">
-      {/* Decorative elements */}
-      <div className="absolute top-0 right-0 opacity-10 pointer-events-none">
-        <svg width="200" height="200" viewBox="0 0 100 100" className="text-clay">
-          <path d="M50 10 Q70 30 70 50 Q70 70 50 90 Q30 70 30 50 Q30 30 50 10" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.3"/>
-        </svg>
-      </div>
-      
-      <div className="mx-auto max-w-2xl px-6 text-center relative z-10">
+    <section className="border-y border-border bg-sand/40 py-24">
+      <div className="mx-auto max-w-2xl px-6 text-center">
         <Label>Mesa de regalos</Label>
-        
-        {/* Decorative divider */}
-        <div className="flex items-center justify-center gap-3 my-6">
-          <div className="h-px w-8 bg-clay/30" />
-          <svg width="12" height="12" viewBox="0 0 12 12" className="text-clay/30">
-            <circle cx="6" cy="6" r="2" fill="currentColor" />
-          </svg>
-          <div className="h-px w-8 bg-clay/30" />
-        </div>
-        
         <p className="mt-8 font-display text-2xl italic leading-relaxed sm:text-3xl">
           Su presencia será nuestro mejor regalo.
         </p>
@@ -621,11 +535,7 @@ function Regalos({ modoPreview }) {
           nuestro primer hogar.
         </p>
         {!modoPreview && (
-          <div className="mx-auto mt-10 max-w-sm border-2 border-clay/30 bg-background px-8 py-8 text-left relative">
-            {/* Corner decorations */}
-            <div className="absolute -top-3 -left-3 w-4 h-4 border-t-2 border-l-2 border-clay/50" />
-            <div className="absolute -bottom-3 -right-3 w-4 h-4 border-b-2 border-r-2 border-clay/50" />
-            
+          <div className="mx-auto mt-10 max-w-sm border border-border bg-background px-8 py-8 text-left">
             <p className="text-[0.6rem] uppercase tracking-[0.28em] text-muted-foreground">Banco</p>
             <p className="mt-1 text-sm">HSBC</p>
             <p className="mt-5 text-[0.6rem] uppercase tracking-[0.28em] text-muted-foreground">
