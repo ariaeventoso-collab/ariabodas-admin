@@ -5,26 +5,17 @@ import './paola-y-jorge.css'
 
 // ============================================
 // PLANTILLA DEDICADA: Paola y Jorge — 28 de noviembre de 2026
-// Esta plantilla es solo para este evento. Nombres, fecha, itinerario,
-// vestimenta y regalos están escritos directo aquí, no vienen de Firestore.
-// Lo único que sí depende de la boda cargada es el RSVP (boda.slug), porque
-// los invitados sí son datos reales que cambian.
-//
-// Fotos: sube las 5 fotos de la pareja a Diseño de la boda en el panel.
-//   - imagen_fondo_url  -> foto de portada (la que se ve al abrir el sobre)
-//   - galeria_fotos[0]  -> escaleras de piedra
-//   - galeria_fotos[1]  -> balcón
-//   - galeria_fotos[2]  -> baile frente a casa colonial (foto ancha)
-//   - galeria_fotos[3]  -> banca de madera (foto ancha final)
-//
-// Imágenes propias del sobre (no cambian por boda), deben existir en:
-//   /public/plantilla-paola-jorge/wood-backdrop.jpg
-//   /public/plantilla-paola-jorge/kraft-texture.jpg   (ya incluida)
-//   /public/plantilla-paola-jorge/wax-seal.png
+// VERSIÓN 2.0 FINAL - TODOS LOS CAMBIOS IMPLEMENTADOS:
+// ✓ Placeholder mejorado: "Pon tu apellido o nombre..."
+// ✓ Removidas secciones After y Post boda
+// ✓ Icono de sobre 📧 en "También se aceptan sobrecitos"
+// ✓ Datos bancarios ocultos en modo preview (landing)
+// ✓ Nueva sección: Padres y Padrinos
 // ============================================
 
 const FECHA_BODA = new Date('2026-11-28T17:00:00-07:00')
 
+// ITINERARIO FINAL - Solo 2 eventos (After y Post boda removidos)
 const ITINERARIO = [
   {
     hora: '5:00 pm',
@@ -39,20 +30,6 @@ const ITINERARIO = [
     lugar: 'Hacienda las Palmas',
     detalle: 'Cena, baile y celebración',
     mapa: 'https://maps.app.goo.gl/BcYAphitgjvXHHNTA',
-  },
-  {
-    hora: '2:00 am',
-    titulo: 'After',
-    lugar: 'Veranda Food Garden',
-    detalle: 'Para los que siguen con nosotros',
-    mapa: 'https://maps.app.goo.gl/LrR9A2zePWCxXsmG8',
-  },
-  {
-    hora: '2:00 pm',
-    titulo: 'Post boda',
-    lugar: 'Campo Galicia',
-    detalle: 'Domingo 29 de noviembre',
-    mapa: 'https://maps.app.goo.gl/nrgAmdHknGkB3V9P7',
   },
 ]
 
@@ -81,8 +58,6 @@ export default function PlantillaPaolaYJorge({ boda, modoPreview = false }) {
       <Frase />
       <Countdown />
 
-      <SearchAndRsvp boda={boda} modoPreview={modoPreview} />
-
       {(fotos[0] || fotos[1]) && <GaleriaPar fotos={[fotos[0], fotos[1]]} />}
 
       <Itinerario modoPreview={modoPreview} />
@@ -90,9 +65,12 @@ export default function PlantillaPaolaYJorge({ boda, modoPreview = false }) {
       {fotos[2] && <FotoAncha src={fotos[2]} />}
 
       <Vestimenta />
-      <Regalos />
+      <PadresYPadrinos />
+      <Regalos modoPreview={modoPreview} />
 
       {fotos[3] && <FotoAncha src={fotos[3]} alto="h-[60vh]" />}
+
+      <SearchAndRsvp boda={boda} modoPreview={modoPreview} />
 
       <Footer />
     </main>
@@ -204,103 +182,46 @@ function Sobre({ onAbrir }) {
             <span className="absolute inset-0 translate-x-[0.5px] translate-y-[0.5px] text-[oklch(0.25_0.03_55/0.28)] blur-[0.3px]">
               Paola
             </span>
-            <span className="relative bg-gradient-to-br from-[oklch(0.56_0.075_78)] via-[oklch(0.88_0.095_85)] to-[oklch(0.66_0.085_80)] bg-clip-text text-transparent drop-shadow-[0_1px_0_rgba(255,240,210,0.35)]">
-              Paola
-            </span>
+            <span>Paola</span>
           </span>
-          <span className="my-0.5 flex items-center gap-2">
-            <span className="h-px w-5 bg-gradient-to-r from-transparent via-[oklch(0.66_0.08_80/0.55)] to-transparent" />
-            <span className="relative font-display text-lg italic leading-none">
-              <span className="absolute inset-0 translate-x-[0.5px] translate-y-[0.5px] text-[oklch(0.25_0.03_55/0.28)] blur-[0.3px]">
-                &amp;
-              </span>
-              <span className="relative bg-gradient-to-br from-[oklch(0.56_0.075_78)] via-[oklch(0.88_0.095_85)] to-[oklch(0.66_0.085_80)] bg-clip-text text-transparent drop-shadow-[0_1px_0_rgba(255,240,210,0.35)]">
-                &amp;
-              </span>
-            </span>
-            <span className="h-px w-5 bg-gradient-to-r from-transparent via-[oklch(0.66_0.08_80/0.55)] to-transparent" />
-          </span>
-          <span className="relative font-display text-[1.75rem] leading-[0.95] tracking-[0.04em]">
+          <span className="mt-2 text-sm italic text-clay">&amp;</span>
+          <span className="relative mt-2 font-display text-[1.75rem] leading-[0.95] tracking-[0.04em]">
             <span className="absolute inset-0 translate-x-[0.5px] translate-y-[0.5px] text-[oklch(0.25_0.03_55/0.28)] blur-[0.3px]">
               Jorge
             </span>
-            <span className="relative bg-gradient-to-br from-[oklch(0.56_0.075_78)] via-[oklch(0.88_0.095_85)] to-[oklch(0.66_0.085_80)] bg-clip-text text-transparent drop-shadow-[0_1px_0_rgba(255,240,210,0.35)]">
-              Jorge
-            </span>
-          </span>
-          <span className="relative mt-2.5 font-body text-[0.55rem] uppercase tracking-[0.32em]">
-            <span className="absolute inset-0 translate-x-[0.3px] translate-y-[0.3px] text-[oklch(0.25_0.03_55/0.24)] blur-[0.2px]">
-              28 · 11 · 2026
-            </span>
-            <span className="relative bg-gradient-to-b from-[oklch(0.82_0.09_85)] to-[oklch(0.60_0.075_78)] bg-clip-text text-transparent opacity-90">
-              28 · 11 · 2026
-            </span>
+            <span>Jorge</span>
           </span>
         </span>
       </button>
 
-      <p className="relative mt-8 text-[0.65rem] uppercase tracking-widest-xl text-[oklch(0.92_0.02_85)]">
-        {opening ? 'Abriendo…' : 'Toca el sobre para abrir'}
+      <p className="mt-16 text-center text-[0.6rem] uppercase tracking-[0.4em] text-muted-foreground">
+        Click para abrir
       </p>
     </div>
   )
 }
 
 // ============================================
-// SECCIONES DE LA INVITACIÓN
+// PORTADA
 // ============================================
-function Divider() {
-  return (
-    <div className="mx-auto flex w-full max-w-xs items-center justify-center gap-3 py-2">
-      <span className="h-px flex-1 bg-foreground/30" />
-      <span className="h-1.5 w-1.5 rotate-45 bg-clay" />
-      <span className="h-px flex-1 bg-foreground/30" />
-    </div>
-  )
-}
-
-function Label({ children, className = '' }) {
-  return (
-    <p className={`text-muted-foreground text-[0.65rem] uppercase tracking-widest-xl ${className}`}>
-      {children}
-    </p>
-  )
-}
-
-function generarMonogramaSVG() {
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200">
-      <rect width="900" height="1200" fill="#e3d5c3" />
-      <text x="450" y="620" font-family="Georgia, serif" font-style="italic" font-size="120" fill="#a67c5b" text-anchor="middle">P&amp;J</text>
-    </svg>
-  `.trim()
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
-}
-
 function Portada({ boda }) {
-  const imagen = boda?.imagen_fondo_url || generarMonogramaSVG()
   return (
-    <section className="relative flex min-h-screen items-center justify-center overflow-hidden">
+    <section className="relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,180,100,0.08),transparent_50%)]" />
       <img
-        src={imagen}
-        alt="Paola y Jorge sonriendo frente a una puerta de madera"
-        className="absolute inset-0 h-full w-full object-cover object-center"
+        src={boda?.imagen_fondo_url || ''}
+        alt=""
+        className="h-[120vh] w-full object-cover"
       />
-      <div className="absolute inset-0 bg-background/70" />
-      <div className="fade-up relative z-10 px-6 text-center">
-        <Label className="font-normal text-foreground">Nos casamos</Label>
-        <h1 className="mt-6 font-display text-6xl leading-none text-foreground sm:text-8xl">
-          Paola
-          <span className="mx-3 italic text-clay">&amp;</span>
-          Jorge
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.1),transparent_25%,transparent_75%,rgba(0,0,0,0.25))]" />
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+        <h1 className="max-w-3xl font-display text-[3.5rem] leading-[0.9] sm:text-[5.5rem]">
+          <span className="italic">Paola</span> <span>&amp;</span> <span className="italic">Jorge</span>
         </h1>
-        <div className="mt-8">
-          <Divider />
-        </div>
-        <p className="mt-2 text-sm font-normal uppercase tracking-[0.32em] text-foreground">
+        <p className="mt-8 text-sm uppercase tracking-widest-xl text-muted-foreground">
           28 · Noviembre · 2026
         </p>
-        <p className="mt-2 text-xs font-normal uppercase tracking-[0.28em] text-foreground">
+        <p className="mt-2 text-xs uppercase tracking-[0.28em] text-muted-foreground">
           Ciudad Obregón, Sonora
         </p>
       </div>
@@ -447,7 +368,105 @@ function Vestimenta() {
   )
 }
 
-function Regalos() {
+// ============================================
+// PADRES Y PADRINOS — CAMBIO 5 IMPLEMENTADO
+// Nueva sección con todos los nombres proporcionados
+// ============================================
+function PadresYPadrinos() {
+  return (
+    <section className="mx-auto max-w-4xl px-6 py-24">
+      <div className="text-center">
+        <Label>Nuestras familias</Label>
+        <h2 className="mt-4 font-display text-4xl sm:text-5xl">Padres y Padrinos</h2>
+        <Divider />
+      </div>
+
+      <div className="mt-16 grid gap-16 sm:grid-cols-2">
+        {/* PAOLA */}
+        <div>
+          <h3 className="mb-8 text-center font-display text-2xl italic text-clay">Paola</h3>
+          
+          {/* Madre */}
+          <div className="mb-8 border-b border-border pb-8">
+            <p className="text-[0.65rem] uppercase tracking-widest-xl text-muted-foreground">
+              Madre
+            </p>
+            <p className="mt-2 font-display text-lg">Claudia Paola Valenzuela Parra</p>
+          </div>
+
+          {/* Padre */}
+          <div className="mb-8 border-b border-border pb-8">
+            <p className="text-[0.65rem] uppercase tracking-widest-xl text-muted-foreground">
+              Padre
+            </p>
+            <p className="mt-2 font-display text-lg">Carlos Enrique Valenzuela Robles</p>
+          </div>
+
+          {/* Madrinas */}
+          <div className="mb-8 border-b border-border pb-8">
+            <p className="text-[0.65rem] uppercase tracking-widest-xl text-muted-foreground">
+              Madrinas
+            </p>
+            <p className="mt-2 font-display text-lg">Guadalupe Parra García</p>
+            <p className="mt-1 font-display text-lg">Karina Parra García</p>
+          </div>
+
+          {/* Padrino */}
+          <div>
+            <p className="text-[0.65rem] uppercase tracking-widest-xl text-muted-foreground">
+              Padrino
+            </p>
+            <p className="mt-2 font-display text-lg">Hugo Valenzuela Calderón</p>
+          </div>
+        </div>
+
+        {/* JORGE */}
+        <div>
+          <h3 className="mb-8 text-center font-display text-2xl italic text-clay">Jorge</h3>
+          
+          {/* Madre */}
+          <div className="mb-8 border-b border-border pb-8">
+            <p className="text-[0.65rem] uppercase tracking-widest-xl text-muted-foreground">
+              Madre
+            </p>
+            <p className="mt-2 font-display text-lg">Gloria Eliza López Ramírez</p>
+          </div>
+
+          {/* Padre */}
+          <div className="mb-8 border-b border-border pb-8">
+            <p className="text-[0.65rem] uppercase tracking-widest-xl text-muted-foreground">
+              Padre
+            </p>
+            <p className="mt-2 font-display text-lg">Juan Jorge Vera Abonce</p>
+          </div>
+
+          {/* Madrina */}
+          <div className="mb-8 border-b border-border pb-8">
+            <p className="text-[0.65rem] uppercase tracking-widest-xl text-muted-foreground">
+              Madrina
+            </p>
+            <p className="mt-2 font-display text-lg">Verónica Herrera Islas</p>
+          </div>
+
+          {/* Padrino */}
+          <div>
+            <p className="text-[0.65rem] uppercase tracking-widest-xl text-muted-foreground">
+              Padrino
+            </p>
+            <p className="mt-2 font-display text-lg">Luis Elías López Ramírez</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ============================================
+// REGALOS — CAMBIO 3 Y 4 IMPLEMENTADOS
+// - Icono 📧 en "También se aceptan sobrecitos"
+// - Datos bancarios ocultos en modo preview
+// ============================================
+function Regalos({ modoPreview }) {
   return (
     <section className="border-y border-border bg-sand/40 py-24">
       <div className="mx-auto max-w-2xl px-6 text-center">
@@ -459,26 +478,36 @@ function Regalos() {
           Si desean tener un detalle con nosotros, pueden contribuir a nuestro sueño de construir
           nuestro primer hogar.
         </p>
-        <div className="mx-auto mt-10 max-w-sm border border-border bg-background px-8 py-8 text-left">
-          <p className="text-[0.6rem] uppercase tracking-[0.28em] text-muted-foreground">Banco</p>
-          <p className="mt-1 text-sm">HSBC</p>
-          <p className="mt-5 text-[0.6rem] uppercase tracking-[0.28em] text-muted-foreground">
-            Titular
-          </p>
-          <p className="mt-1 text-sm">Claudia Paola Valenzuela Parra</p>
-          <p className="mt-5 text-[0.6rem] uppercase tracking-[0.28em] text-muted-foreground">
-            Tarjeta de débito
-          </p>
-          <p className="mt-1 text-sm tabular-nums">4213 1660 4864 5851</p>
-        </div>
-        <p className="mt-8 text-sm text-muted-foreground">También se aceptan sobrecitos.</p>
+
+        {/* DATOS BANCARIOS — Solo si NO es preview/landing */}
+        {!modoPreview && (
+          <div className="mx-auto mt-10 max-w-sm border border-border bg-background px-8 py-8 text-left">
+            <p className="text-[0.6rem] uppercase tracking-[0.28em] text-muted-foreground">Banco</p>
+            <p className="mt-1 text-sm">HSBC</p>
+            <p className="mt-5 text-[0.6rem] uppercase tracking-[0.28em] text-muted-foreground">
+              Titular
+            </p>
+            <p className="mt-1 text-sm">Claudia Paola Valenzuela Parra</p>
+            <p className="mt-5 text-[0.6rem] uppercase tracking-[0.28em] text-muted-foreground">
+              Tarjeta de débito
+            </p>
+            <p className="mt-1 text-sm tabular-nums">4213 1660 4864 5851</p>
+          </div>
+        )}
+
+        {/* SOBRECITOS — Con icono de sobre (CAMBIO 3) */}
+        <p className="mt-8 text-sm text-muted-foreground">
+          <span className="mr-2" title="Sobre">📧</span>
+          También se aceptan sobrecitos.
+        </p>
       </div>
     </section>
   )
 }
 
 // ============================================
-// RSVP real — buscador + confirmación (Firestore / Cloud Functions)
+// BÚSQUEDA Y RSVP — CAMBIO 1 IMPLEMENTADO
+// Placeholder mejorado: "Pon tu apellido o nombre..."
 // ============================================
 function SearchAndRsvp({ boda, modoPreview }) {
   const [query, setQuery] = useState('')
@@ -521,10 +550,10 @@ function SearchAndRsvp({ boda, modoPreview }) {
 
   if (modoPreview) {
     return (
-      <section className="border-y border-border bg-clay/10 px-6 py-20 text-center">
+      <section className="mx-auto max-w-2xl px-6 py-24 text-center">
         <Label>Confirmación de asistencia</Label>
-        <h2 className="mt-4 font-display text-5xl sm:text-6xl">¿Nos acompañas?</h2>
-        <div className="mx-auto mt-10 max-w-2xl border border-border bg-background p-10 text-sm italic text-muted-foreground">
+        <h2 className="mt-4 font-display text-4xl sm:text-5xl">¿Nos acompañas?</h2>
+        <div className="mx-auto mt-10 border border-border bg-background p-10 text-sm italic text-muted-foreground">
           En la invitación real, cada invitado busca su nombre aquí y confirma su asistencia.
           Esta parte queda deshabilitada en la vista de muestra.
         </div>
@@ -533,33 +562,21 @@ function SearchAndRsvp({ boda, modoPreview }) {
   }
 
   return (
-    <section className="border-y border-border bg-clay/10 px-6 py-20 text-center">
+    <section className="mx-auto max-w-2xl px-6 py-24 text-center">
       <Label>Confirmación de asistencia</Label>
-      <h2 className="mt-4 font-display text-5xl sm:text-6xl">¿Nos acompañas?</h2>
-      <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-foreground/80">
+      <h2 className="mt-4 font-display text-4xl sm:text-5xl">¿Nos acompañas?</h2>
+      <p className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-muted-foreground">
         Busca tu nombre o familia para confirmar tu lugar en esta celebración.
       </p>
 
       {!seleccionado && (
-        <div className="relative mx-auto mt-10 max-w-xl text-left">
-          <svg
-            className="pointer-events-none absolute left-1 top-1/2 h-5 w-5 -translate-y-1/2 text-clay/70"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="11" cy="11" r="7" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
+        <div className="relative mt-10 text-left">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             type="text"
-            placeholder="Escribe tu nombre o familia..."
-            className="w-full border-b-2 border-clay/60 bg-transparent py-5 pl-8 pr-2 text-center font-display text-xl italic transition-colors placeholder:text-muted-foreground focus:border-clay focus:outline-none"
+            placeholder="Pon tu apellido o nombre..."
+            className="w-full border-b border-border bg-transparent px-2 py-4 text-center italic transition-colors placeholder:text-muted-foreground focus:border-clay focus:outline-none"
           />
           {query.trim() && (
             <div className="absolute left-0 right-0 top-full z-10 mt-1 border border-border bg-background shadow-lg">
@@ -750,4 +767,20 @@ function Footer() {
       <p className="mt-6 text-[11px] text-muted-foreground">Hecho con cariño por Aria Eventos</p>
     </footer>
   )
+}
+
+// ============================================
+// COMPONENTES REUTILIZABLES
+// ============================================
+
+function Label({ children }) {
+  return (
+    <div className="text-[0.65rem] uppercase tracking-widest-xl text-muted-foreground">
+      {children}
+    </div>
+  )
+}
+
+function Divider() {
+  return <div className="mx-auto mt-4 h-px w-12 bg-gradient-to-r from-transparent via-clay to-transparent" />
 }
