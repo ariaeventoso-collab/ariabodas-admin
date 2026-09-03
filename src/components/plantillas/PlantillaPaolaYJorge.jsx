@@ -65,8 +65,8 @@ export default function PlantillaPaolaYJorge({ boda, modoPreview = false }) {
 
       <Portada boda={boda} />
       <Frase />
-      <SearchAndRsvp boda={boda} modoPreview={modoPreview} />
       <Countdown />
+      <SearchAndRsvp boda={boda} modoPreview={modoPreview} />
 
       {(fotos[0] || fotos[1]) && <GaleriaPar fotos={[fotos[0], fotos[1]]} />}
 
