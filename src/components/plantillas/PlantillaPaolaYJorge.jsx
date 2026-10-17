@@ -40,20 +40,6 @@ const ITINERARIO = [
     detalle: 'Cena, baile y celebración',
     mapa: 'https://maps.app.goo.gl/BcYAphitgjvXHHNTA',
   },
-  {
-    hora: '2:00 am',
-    titulo: 'After',
-    lugar: 'Veranda Food Garden',
-    detalle: 'Para los que siguen con nosotros',
-    mapa: 'https://maps.app.goo.gl/LrR9A2zePWCxXsmG8',
-  },
-  {
-    hora: '2:00 pm',
-    titulo: 'Post boda',
-    lugar: 'Campo Galicia',
-    detalle: 'Domingo 29 de noviembre',
-    mapa: 'https://maps.app.goo.gl/nrgAmdHknGkB3V9P7',
-  },
 ]
 
 export default function PlantillaPaolaYJorge({ boda, modoPreview = false }) {
@@ -80,19 +66,19 @@ export default function PlantillaPaolaYJorge({ boda, modoPreview = false }) {
       <Portada boda={boda} />
       <Frase />
       <Countdown />
+      <SearchAndRsvp boda={boda} modoPreview={modoPreview} />
 
       {(fotos[0] || fotos[1]) && <GaleriaPar fotos={[fotos[0], fotos[1]]} />}
 
       <Itinerario modoPreview={modoPreview} />
+      <Vestimenta />
 
       {fotos[2] && <FotoAncha src={fotos[2]} />}
 
-      <Vestimenta />
-      <Regalos />
+      <PadresYPadrinos />
+      <Regalos modoPreview={modoPreview} />
 
       {fotos[3] && <FotoAncha src={fotos[3]} alto="h-[60vh]" />}
-
-      <SearchAndRsvp boda={boda} modoPreview={modoPreview} />
 
       <Footer />
     </main>
@@ -447,7 +433,96 @@ function Vestimenta() {
   )
 }
 
-function Regalos() {
+function PadresYPadrinos() {
+  return (
+    <section className="mx-auto max-w-4xl px-6 py-24">
+      <div className="text-center">
+        <Label>Nuestras familias</Label>
+        <h2 className="mt-4 font-display text-4xl sm:text-5xl">Padres y Padrinos</h2>
+        <Divider />
+      </div>
+
+      <div className="mt-16 grid gap-16 sm:grid-cols-2">
+        {/* PAOLA */}
+        <div>
+          <h3 className="mb-8 text-center font-display text-2xl italic text-clay">Paola</h3>
+          
+          {/* Madre */}
+          <div className="mb-8 border-b border-border pb-8">
+            <p className="text-[0.65rem] uppercase tracking-widest-xl text-muted-foreground">
+              Madre
+            </p>
+            <p className="mt-2 font-display text-lg">Claudia Paola Valenzuela Parra</p>
+          </div>
+
+          {/* Padre */}
+          <div className="mb-8 border-b border-border pb-8">
+            <p className="text-[0.65rem] uppercase tracking-widest-xl text-muted-foreground">
+              Padre
+            </p>
+            <p className="mt-2 font-display text-lg">Carlos Enrique Valenzuela Robles</p>
+          </div>
+
+          {/* Madrinas */}
+          <div className="mb-8 border-b border-border pb-8">
+            <p className="text-[0.65rem] uppercase tracking-widest-xl text-muted-foreground">
+              Madrinas
+            </p>
+            <p className="mt-2 font-display text-lg">Guadalupe Parra García</p>
+            <p className="mt-1 font-display text-lg">Karina Parra García</p>
+          </div>
+
+          {/* Padrino */}
+          <div>
+            <p className="text-[0.65rem] uppercase tracking-widest-xl text-muted-foreground">
+              Padrino
+            </p>
+            <p className="mt-2 font-display text-lg">Hugo Valenzuela Calderón</p>
+          </div>
+        </div>
+
+        {/* JORGE */}
+        <div>
+          <h3 className="mb-8 text-center font-display text-2xl italic text-clay">Jorge</h3>
+          
+          {/* Madre */}
+          <div className="mb-8 border-b border-border pb-8">
+            <p className="text-[0.65rem] uppercase tracking-widest-xl text-muted-foreground">
+              Madre
+            </p>
+            <p className="mt-2 font-display text-lg">Gloria Eliza López Ramírez</p>
+          </div>
+
+          {/* Padre */}
+          <div className="mb-8 border-b border-border pb-8">
+            <p className="text-[0.65rem] uppercase tracking-widest-xl text-muted-foreground">
+              Padre
+            </p>
+            <p className="mt-2 font-display text-lg">Juan Jorge Vera Abonce</p>
+          </div>
+
+          {/* Madrina */}
+          <div className="mb-8 border-b border-border pb-8">
+            <p className="text-[0.65rem] uppercase tracking-widest-xl text-muted-foreground">
+              Madrina
+            </p>
+            <p className="mt-2 font-display text-lg">Verónica Herrera Islas</p>
+          </div>
+
+          {/* Padrino */}
+          <div>
+            <p className="text-[0.65rem] uppercase tracking-widest-xl text-muted-foreground">
+              Padrino
+            </p>
+            <p className="mt-2 font-display text-lg">Luis Elías López Ramírez</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function Regalos({ modoPreview }) {
   return (
     <section className="border-y border-border bg-sand/40 py-24">
       <div className="mx-auto max-w-2xl px-6 text-center">
@@ -459,19 +534,24 @@ function Regalos() {
           Si desean tener un detalle con nosotros, pueden contribuir a nuestro sueño de construir
           nuestro primer hogar.
         </p>
-        <div className="mx-auto mt-10 max-w-sm border border-border bg-background px-8 py-8 text-left">
-          <p className="text-[0.6rem] uppercase tracking-[0.28em] text-muted-foreground">Banco</p>
-          <p className="mt-1 text-sm">HSBC</p>
-          <p className="mt-5 text-[0.6rem] uppercase tracking-[0.28em] text-muted-foreground">
-            Titular
-          </p>
-          <p className="mt-1 text-sm">Claudia Paola Valenzuela Parra</p>
-          <p className="mt-5 text-[0.6rem] uppercase tracking-[0.28em] text-muted-foreground">
-            Tarjeta de débito
-          </p>
-          <p className="mt-1 text-sm tabular-nums">4213 1660 4864 5851</p>
-        </div>
-        <p className="mt-8 text-sm text-muted-foreground">También se aceptan sobrecitos.</p>
+        {!modoPreview && (
+          <div className="mx-auto mt-10 max-w-sm border border-border bg-background px-8 py-8 text-left">
+            <p className="text-[0.6rem] uppercase tracking-[0.28em] text-muted-foreground">Banco</p>
+            <p className="mt-1 text-sm">HSBC</p>
+            <p className="mt-5 text-[0.6rem] uppercase tracking-[0.28em] text-muted-foreground">
+              Titular
+            </p>
+            <p className="mt-1 text-sm">Claudia Paola Valenzuela Parra</p>
+            <p className="mt-5 text-[0.6rem] uppercase tracking-[0.28em] text-muted-foreground">
+              Tarjeta de débito
+            </p>
+            <p className="mt-1 text-sm tabular-nums">4213 1660 4864 5851</p>
+          </div>
+        )}
+        <p className="mt-8 text-sm text-muted-foreground">
+          <span className="mr-2" title="Sobre">📧</span>
+          También se aceptan sobrecitos.
+        </p>
       </div>
     </section>
   )
@@ -546,14 +626,17 @@ function SearchAndRsvp({ boda, modoPreview }) {
       </p>
 
       {!seleccionado && (
-        <div className="relative mt-10 text-left">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            type="text"
-            placeholder="Escribe tu nombre o familia..."
-            className="w-full border-b border-border bg-transparent px-2 py-4 text-center italic transition-colors placeholder:text-muted-foreground focus:border-clay focus:outline-none"
-          />
+        <div className="relative mt-10">
+          <div className="relative flex items-center">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              type="text"
+              placeholder="Pon tu apellido o nombre..."
+              className="w-full border-b border-border bg-transparent px-2 py-4 text-center italic transition-colors placeholder:text-muted-foreground focus:border-clay focus:outline-none"
+            />
+            <span className="absolute right-2 text-muted-foreground text-sm pointer-events-none opacity-60">🔍</span>
+          </div>
           {query.trim() && (
             <div className="absolute left-0 right-0 top-full z-10 mt-1 border border-border bg-background shadow-lg">
               {buscando && (
