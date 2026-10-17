@@ -5,7 +5,7 @@ import { functions } from '../../lib/firebaseClient'
 // PLANTILLA: Clásica
 // Sobre animado + portada elegante + secciones estándar.
 // Recibe la boda ya cargada desde PublicInvitation.jsx (el selector de plantillas).
-export default function PlantillaClasica({ boda }) {
+export default function PlantillaClasica({ boda, modoPreview = false }) {
   const [sobreAbierto, setSobreAbierto] = useState(false)
 
   const colores = boda?.colores || {}
@@ -91,7 +91,16 @@ function ContenidoInvitacion({ boda, primario, claro, fondoImg }) {
         <Portada boda={boda} primario={primario} />
         <Countdown fecha={boda.fecha_evento} primario={primario} />
         {boda.itinerario?.length > 0 && <Itinerario eventos={boda.itinerario} primario={primario} />}
-        <BuscadorRSVP boda={boda} primario={primario} claro={claro} />
+        {modoPreview ? (
+          <div style={{ padding: '0 1.5rem 2.5rem' }}>
+            <TituloSeccion texto="Confirma tu asistencia" primario={primario} />
+            <p style={{ textAlign: 'center', fontSize: 13, fontStyle: 'italic', color: '#888', fontFamily: 'Inter, sans-serif' }}>
+              En la invitación real, cada invitado busca su nombre aquí y confirma su asistencia. Esta parte queda deshabilitada en la vista de muestra.
+            </p>
+          </div>
+        ) : (
+          <BuscadorRSVP boda={boda} primario={primario} claro={claro} />
+        )}
         {boda.regalos && <Regalos regalos={boda.regalos} primario={primario} />}
         {boda.galeria_fotos?.length > 0 && <Galeria fotos={boda.galeria_fotos} />}
         {boda.codigo_vestimenta && <NotaSimple titulo="Código de vestimenta" texto={boda.codigo_vestimenta} primario={primario} />}
@@ -214,6 +223,7 @@ function BuscadorRSVP({ boda, primario, claro }) {
       setResultados(null)
       return
     }
+    if (busqueda.trim().length < 3) { setResultados(null); return }
 
     const espera = setTimeout(async () => {
       setBuscando(true)
@@ -223,7 +233,8 @@ function BuscadorRSVP({ boda, primario, claro }) {
         const res = await fn({ bodaSlug: boda.slug, nombreBusqueda: busqueda.trim() })
         setResultados(res.data.resultados)
       } catch (e) {
-        setError('No se pudo buscar. Intenta de nuevo.')
+        console.error('Error al buscar invitado:', e)
+        setError('No pudimos buscar en este momento. Revisa tu conexión e intenta de nuevo.')
       }
       setBuscando(false)
     }, 350)
@@ -253,7 +264,8 @@ function BuscadorRSVP({ boda, primario, claro }) {
       await fn({ bodaSlug: boda.slug, invitadoId: seleccionado.invitado_id, pasesConfirmados: pasesFinal })
       setConfirmado(true)
     } catch (e) {
-      setError(e.message || 'No se pudo confirmar. Intenta de nuevo.')
+      console.error('Error al confirmar:', e)
+      setError(['functions/failed-precondition', 'functions/invalid-argument'].includes(e.code) ? e.message : 'No se pudo confirmar. Intenta de nuevo en un momento.')
     }
     setEnviando(false)
   }
@@ -284,6 +296,9 @@ function BuscadorRSVP({ boda, primario, claro }) {
             }}>
               {buscando && (
                 <p style={{ padding: '10px 14px', fontSize: 13, color: '#999', margin: 0, fontFamily: 'Inter, sans-serif' }}>Buscando…</p>
+              )}
+              {busqueda.trim().length < 3 && (
+                <p style={{ padding: '10px 14px', fontSize: 13, color: '#999', margin: 0, fontFamily: 'Inter, sans-serif' }}>Escribe al menos 3 letras de tu nombre o apellido…</p>
               )}
               {!buscando && resultados?.length === 0 && (
                 <p style={{ padding: '10px 14px', fontSize: 13, color: '#999', margin: 0, fontFamily: 'Inter, sans-serif' }}>

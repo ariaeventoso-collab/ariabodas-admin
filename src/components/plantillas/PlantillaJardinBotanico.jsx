@@ -138,20 +138,25 @@ function SearchAndRsvp({ boda, modoPreview }) {
   const [query, setQuery] = useState('')
   const [resultados, setResultados] = useState(null)
   const [buscando, setBuscando] = useState(false)
+  const [errorBusqueda, setErrorBusqueda] = useState(false)
   const [seleccionado, setSeleccionado] = useState(null)
 
   useEffect(() => {
     if (modoPreview) return
     if (seleccionado) return
     if (!query.trim()) { setResultados(null); return }
+    if (query.trim().length < 3) { setResultados(null); setErrorBusqueda(false); return }
     const espera = setTimeout(async () => {
       setBuscando(true)
+      setErrorBusqueda(false)
       try {
         const fn = httpsCallable(functions, 'buscarInvitado')
         const res = await fn({ bodaSlug: boda.slug, nombreBusqueda: query.trim() })
         setResultados(res.data.resultados)
       } catch (e) {
-        setResultados([])
+        console.error('Error al buscar invitado:', e)
+        setResultados(null)
+        setErrorBusqueda(true)
       }
       setBuscando(false)
     }, 350)
@@ -201,6 +206,12 @@ function SearchAndRsvp({ boda, modoPreview }) {
           {query.trim() && (
             <div className="absolute left-0 right-0 top-full z-10 mt-1 rounded-sm border border-sage/15 bg-white shadow-soft">
               {buscando && <p className="p-4 text-center text-sm italic text-charcoal/50">Buscando…</p>}
+              {query.trim().length < 3 && (
+                <p className="p-4 text-center text-sm italic opacity-60">Escribe al menos 3 letras de tu nombre o apellido…</p>
+              )}
+              {!buscando && errorBusqueda && (
+                <p className="p-4 text-center text-sm italic text-red-600">No pudimos buscar en este momento. Revisa tu conexión e intenta de nuevo.</p>
+              )}
               {!buscando && resultados?.length === 0 && (
                 <p className="p-4 text-center text-sm italic text-charcoal/50">No encontramos ese nombre.</p>
               )}
@@ -246,7 +257,8 @@ function GuestCardYRsvp({ boda, invitado, onBuscarDeNuevo }) {
       })
       setEnviado(true)
     } catch (e) {
-      setError(e.message || 'No se pudo confirmar. Intenta de nuevo.')
+      console.error('Error al confirmar:', e)
+      setError(['functions/failed-precondition', 'functions/invalid-argument'].includes(e.code) ? e.message : 'No se pudo confirmar. Intenta de nuevo en un momento.')
     }
     setEnviando(false)
   }

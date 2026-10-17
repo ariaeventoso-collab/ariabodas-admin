@@ -73,6 +73,16 @@ exports.eliminarAcceso = onCall(async (request) => {
   return { ok: true }
 })
 
+// Quita acentos y mayúsculas para comparar nombres:
+// "Fam. Cabral López" -> "fam. cabral lopez"
+function normalizar(texto) {
+  return String(texto || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+}
+
 // ============================================
 // FUNCIÓN 1: buscarInvitado
 // El invitado escribe su nombre y el slug de la boda (que va en el link).
@@ -84,6 +94,16 @@ exports.buscarInvitado = onCall(async (request) => {
 
   if (!bodaSlug || !nombreBusqueda) {
     throw new HttpsError('invalid-argument', 'Falta el nombre de la boda o el nombre a buscar.')
+  }
+
+  // Palabras de búsqueda sin acentos. Se ignoran palabras de 1-2 letras
+  // ("de", "la", "y") y se exige al menos una palabra de 3+ letras, para que
+  // nadie pueda ver toda la lista de invitados buscando solo "a".
+  const palabras = normalizar(nombreBusqueda)
+    .split(/[\s.,]+/)
+    .filter(p => p.length >= 3 && p !== 'fam' && p !== 'familia')
+  if (palabras.length === 0) {
+    return { resultados: [] }
   }
 
   // 1. Encontrar la boda por su slug
@@ -99,10 +119,20 @@ exports.buscarInvitado = onCall(async (request) => {
   //    funciona bien para el tamaño de listas de una boda, hasta ~500)
   const invitadosSnap = await db.collection('bodas').doc(bodaId).collection('invitados').get()
 
+  // Un invitado coincide si su nombre contiene CUALQUIERA de las palabras
+  // buscadas ("Juan Cabral" encuentra "Fam. Cabral López"). Se ordenan
+  // primero los que coinciden con más palabras, y se limita a 10.
   const coincidencias = invitadosSnap.docs
     .map(doc => ({ id: doc.id, ...doc.data() }))
-    .filter(inv => inv.nombre_familia.toLowerCase().includes(nombreBusqueda.toLowerCase()))
-    .map(inv => ({
+    .filter(inv => inv.nombre_familia)
+    .map(inv => {
+      const nombre = normalizar(inv.nombre_familia)
+      return { inv, puntos: palabras.filter(p => nombre.includes(p)).length }
+    })
+    .filter(x => x.puntos > 0)
+    .sort((a, b) => b.puntos - a.puntos)
+    .slice(0, 10)
+    .map(({ inv }) => ({
       invitado_id: inv.id,
       nombre_familia: inv.nombre_familia,
       pases_asignados: inv.pases_asignados,
@@ -123,6 +153,10 @@ exports.confirmarRSVP = onCall(async (request) => {
   if (!bodaSlug || !invitadoId || pasesConfirmados === undefined) {
     throw new HttpsError('invalid-argument', 'Faltan datos para confirmar.')
   }
+  // Debe ser un número entero, 0 o mayor (0 = "no asistiré")
+  if (!Number.isInteger(pasesConfirmados) || pasesConfirmados < 0) {
+    throw new HttpsError('invalid-argument', 'El número de pases no es válido.')
+  }
 
   const bodasSnap = await db.collection('bodas').where('slug', '==', bodaSlug).limit(1).get()
   if (bodasSnap.empty) {
@@ -138,7 +172,7 @@ exports.confirmarRSVP = onCall(async (request) => {
   }
 
   const datosInvitado = invitadoDoc.data()
-  const tope = datosInvitado.pases_asignados
+  const tope = Number(datosInvitado.pases_asignados) || 0
   const estadoPrevio = datosInvitado.estado_rsvp || 'pendiente'
 
   // Regla clave: no puede confirmar más de lo asignado
@@ -150,7 +184,7 @@ exports.confirmarRSVP = onCall(async (request) => {
   await invitadoRef.update({
     pases_confirmados: pasesConfirmados,
     estado_rsvp: pasesConfirmados === 0 ? 'no_confirmado' : 'confirmado',
-    mensaje_novios: mensaje || '',
+    mensaje_novios: String(mensaje || '').slice(0, 1000),
     actualizado_en: new Date(),
   })
 

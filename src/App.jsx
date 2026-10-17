@@ -10,6 +10,27 @@ export default function AdminApp() {
   const [usuario, setUsuario] = useState(undefined) // undefined = verificando, null = sin sesión
   const [perfilUsuario, setPerfilUsuario] = useState(undefined) // undefined = cargando, null = no encontrado
 
+  // ============================================
+  // NUEVA FUNCIONALIDAD: Guardar y restaurar scroll
+  // ============================================
+  useEffect(() => {
+    // Restaurar scroll cuando carga la página
+    const scrollGuardado = localStorage.getItem('admin-scroll-position')
+    if (scrollGuardado) {
+      setTimeout(() => {
+        window.scrollTo(0, parseInt(scrollGuardado, 10))
+      }, 100)
+    }
+
+    // Guardar scroll mientras el usuario hace scroll
+    const handleScroll = () => {
+      localStorage.setItem('admin-scroll-position', window.scrollY.toString())
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   useEffect(() => {
     const desuscribir = onAuthStateChanged(auth, async (u) => {
       setUsuario(u)

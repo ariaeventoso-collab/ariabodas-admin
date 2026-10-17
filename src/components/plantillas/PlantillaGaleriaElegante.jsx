@@ -329,6 +329,7 @@ function SearchAndRsvp({ boda, modoPreview }) {
   const [query, setQuery] = useState('')
   const [resultados, setResultados] = useState(null)
   const [buscando, setBuscando] = useState(false)
+  const [errorBusqueda, setErrorBusqueda] = useState(false)
   const [seleccionado, setSeleccionado] = useState(null)
 
   useEffect(() => {
@@ -338,14 +339,18 @@ function SearchAndRsvp({ boda, modoPreview }) {
       setResultados(null)
       return
     }
+    if (query.trim().length < 3) { setResultados(null); setErrorBusqueda(false); return }
     const espera = setTimeout(async () => {
       setBuscando(true)
+      setErrorBusqueda(false)
       try {
         const fn = httpsCallable(functions, 'buscarInvitado')
         const res = await fn({ bodaSlug: boda.slug, nombreBusqueda: query.trim() })
         setResultados(res.data.resultados)
       } catch (e) {
-        setResultados([])
+        console.error('Error al buscar invitado:', e)
+        setResultados(null)
+        setErrorBusqueda(true)
       }
       setBuscando(false)
     }, 350)
@@ -399,6 +404,12 @@ function SearchAndRsvp({ boda, modoPreview }) {
               {buscando && (
                 <p className="p-4 text-center text-sm italic text-muted-foreground">Buscando…</p>
               )}
+              {query.trim().length < 3 && (
+                <p className="p-4 text-center text-sm italic opacity-60">Escribe al menos 3 letras de tu nombre o apellido…</p>
+              )}
+              {!buscando && errorBusqueda && (
+                <p className="p-4 text-center text-sm italic text-red-600">No pudimos buscar en este momento. Revisa tu conexión e intenta de nuevo.</p>
+              )}
               {!buscando && resultados?.length === 0 && (
                 <p className="p-4 text-center text-sm italic text-muted-foreground">
                   No encontramos ese nombre.
@@ -447,7 +458,8 @@ function GuestCardYRsvp({ boda, invitado, onBuscarDeNuevo }) {
       })
       setEnviado(true)
     } catch (e) {
-      setError(e.message || 'No se pudo confirmar. Intenta de nuevo.')
+      console.error('Error al confirmar:', e)
+      setError(['functions/failed-precondition', 'functions/invalid-argument'].includes(e.code) ? e.message : 'No se pudo confirmar. Intenta de nuevo en un momento.')
     }
     setEnviando(false)
   }
