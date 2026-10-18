@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, orderBy, query } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
+import { coincideBusqueda } from '../lib/texto'
 import { quitarInvitadoDeMesas, actualizarLugaresEnMesas } from '../lib/mesaHelpers'
 import ImportarExcel from './ImportarExcel'
 
@@ -186,7 +187,7 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
   }
 
   const invitadosFiltrados = invitados
-    .filter(inv => inv.nombre_familia.toLowerCase().includes(busqueda.toLowerCase()))
+    .filter(inv => coincideBusqueda(inv.nombre_familia, busqueda))
     .filter(inv => {
       if (filtroEstado === 'todos') return true
       if (filtroEstado === 'pendiente') return inv.estado_rsvp === 'pendiente' || !inv.estado_rsvp
