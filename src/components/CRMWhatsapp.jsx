@@ -22,6 +22,14 @@ function htmlAFormatoWhatsapp(html) {
 
     const hijos = Array.from(nodo.childNodes).map(recorrer).join('')
     const etiqueta = nodo.tagName.toLowerCase()
+
+    // Emojis como imagen: muchas páginas (ChatGPT, WhatsApp Web, Gmail,
+    // redes sociales) dibujan los emojis como <img alt="😊">. Sin esto,
+    // al pegar se perdían porque una imagen no tiene texto adentro.
+    if (etiqueta === 'img') {
+      return nodo.getAttribute('alt') || ''
+    }
+
     const pesoFuente = (nodo.style && nodo.style.fontWeight) || ''
     const estiloFuente = (nodo.style && nodo.style.fontStyle) || ''
 
@@ -105,9 +113,13 @@ export default function CRMWhatsapp({ boda }) {
   }
 
   async function enviar(inv) {
-    const numero = `${inv.lada}${inv.telefono}`.replace(/[^\d+]/g, '')
-    const texto = encodeURIComponent(mensaje)
-    window.open(`https://wa.me/${numero}?text=${texto}`, '_blank')
+    // Solo dígitos (sin "+", espacios ni guiones), como lo pide WhatsApp
+    const numero = `${inv.lada}${inv.telefono}`.replace(/\D/g, '')
+    const texto = encodeURIComponent(mensaje.normalize('NFC'))
+    // Se usa api.whatsapp.com en vez de wa.me: los links wa.me pasan por
+    // una redirección que en algunos equipos rompe los emojis (salen como
+    // cuadritos, "?" o desaparecen).
+    window.open(`https://api.whatsapp.com/send?phone=${numero}&text=${texto}`, '_blank')
 
     // Persistido en Firestore (no solo estado local) para que el rastro de
     // "ya se le envió" no se pierda si cambias de pestaña o recargas.
