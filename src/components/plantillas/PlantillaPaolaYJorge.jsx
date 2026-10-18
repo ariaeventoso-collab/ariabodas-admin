@@ -452,7 +452,7 @@ function PadresYPadrinos() {
             <p className="text-[0.65rem] uppercase tracking-widest-xl text-muted-foreground">
               Madre
             </p>
-            <p className="mt-2 font-display text-lg">Claudia Paola Valenzuela Parra</p>
+            <p className="mt-2 font-display text-lg">Claudia Parra García</p>
           </div>
 
           {/* Padre */}
