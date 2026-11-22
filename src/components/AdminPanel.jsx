@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { collection, getDocs, query, where, doc, updateDoc } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
 import GestionInvitados from './GestionInvitados'
@@ -22,12 +22,42 @@ function diasRestantes(fecha) {
   return dias >= 0 ? dias : null
 }
 
+// Recordar en qué boda y pestaña estabas, para que al recargar la página
+// (refresh) no te regrese a la lista de bodas. Se guarda en este navegador.
+const CLAVE_BODA = 'admin-boda-abierta'
+const CLAVE_VISTA = 'admin-pestana'
+const VISTAS = ['invitados', 'crm', 'mesas', 'mensajes', 'accesos', 'diseno']
+
+function leerGuardado(clave) {
+  try { return localStorage.getItem(clave) } catch { return null }
+}
+function guardar(clave, valor) {
+  try {
+    if (valor) localStorage.setItem(clave, valor)
+    else localStorage.removeItem(clave)
+  } catch { /* navegador sin almacenamiento: no pasa nada */ }
+}
+
 export default function AdminPanel() {
   const [bodas, setBodas] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
   const [bodaSeleccionada, setBodaSeleccionada] = useState(null)
-  const [vista, setVista] = useState('invitados')
+  const [vista, setVista] = useState(() => {
+    const guardada = leerGuardado(CLAVE_VISTA)
+    return VISTAS.includes(guardada) ? guardada : 'invitados'
+  })
+  // Evita borrar lo guardado antes de terminar de restaurarlo al cargar
+  const restaurado = useRef(false)
+
+  useEffect(() => {
+    guardar(CLAVE_VISTA, vista)
+  }, [vista])
+
+  useEffect(() => {
+    if (!restaurado.current) return
+    guardar(CLAVE_BODA, bodaSeleccionada?.id || null)
+  }, [bodaSeleccionada])
   const [mostrarCrearBoda, setMostrarCrearBoda] = useState(false)
 
   // Cuando entras al detalle de una boda, registramos un paso en el
@@ -89,9 +119,21 @@ export default function AdminPanel() {
       bodasConDatos.sort((a, b) => a.fecha_evento?.toMillis() - b.fecha_evento?.toMillis())
 
       setBodas(bodasConDatos)
+
+      // Solo la primera vez (al abrir o recargar la página): si estabas
+      // dentro de una boda, volvemos a abrirla en la misma pestaña.
+      if (!restaurado.current) {
+        const idGuardado = leerGuardado(CLAVE_BODA)
+        const bodaGuardada = bodasConDatos.find(b => b.id === idGuardado)
+        if (bodaGuardada) {
+          window.history.pushState({ vista: 'detalle-boda' }, '')
+          setBodaSeleccionada(bodaGuardada)
+        }
+      }
     } catch (e) {
       setError('No se pudieron cargar tus bodas. Intenta de nuevo en un momento.')
     }
+    restaurado.current = true
 
     setCargando(false)
   }

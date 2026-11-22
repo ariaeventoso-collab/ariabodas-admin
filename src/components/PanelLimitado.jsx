@@ -16,7 +16,19 @@ export default function PanelLimitado({ perfilUsuario }) {
   const esPlanner = perfilUsuario.rol === 'wedding_planner'
   // Los novios ven primero sus mensajes; el wedding planner no tiene
   // acceso a esa sección, así que arranca directo en Invitados.
-  const [vista, setVista] = useState(esPlanner ? 'invitados' : 'mensajes')
+  // Se recuerda la pestaña en este navegador para que un refresh no te
+  // regrese al inicio. Solo se restaura una pestaña que este rol puede ver.
+  const [vista, setVista] = useState(() => {
+    let guardada = null
+    try { guardada = localStorage.getItem('panel-pestana') } catch { /* sin almacenamiento */ }
+    const permitidas = esPlanner ? ['invitados', 'crm', 'mesas'] : ['mensajes', 'invitados', 'mesas']
+    if (permitidas.includes(guardada)) return guardada
+    return esPlanner ? 'invitados' : 'mensajes'
+  })
+
+  useEffect(() => {
+    try { localStorage.setItem('panel-pestana', vista) } catch { /* sin almacenamiento */ }
+  }, [vista])
 
   useEffect(() => {
     cargarBoda()
