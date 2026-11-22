@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
 import { asignarInvitadoAMesa, quitarDeMesaEspecifica } from '../lib/mesaHelpers'
+import { exportarMesasExcel } from '../lib/exportarExcel'
 
 export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
   const [invitados, setInvitados] = useState([])
@@ -131,10 +132,18 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
           : 'Arrastra un invitado hacia una mesa (o tócalo y luego toca la mesa, en pantallas táctiles)'}
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20, alignItems: 'start' }}>
 
-        {/* Columna izquierda: invitados sin mesa */}
-        <div>
+        {/* Columna izquierda: invitados sin mesa.
+            Se queda fija en pantalla (sticky) y tiene su propio scroll:
+            al deslizar los nombres NO se mueven las mesas, y al deslizar
+            las mesas la lista de nombres sigue visible para arrastrar. */}
+        <div style={{
+          position: 'sticky', top: 16,
+          maxHeight: 'calc(100vh - 32px)', overflowY: 'auto',
+          overscrollBehavior: 'contain',
+          paddingRight: 6,
+        }}>
           <SeccionInvitados titulo="Confirmados" color="var(--color-sage)" invitados={confirmados} seleccionado={invitadoArrastrado} onArrastrar={setInvitadoArrastrado} />
           <SeccionInvitados titulo="Pendientes" color="var(--color-text-muted)" invitados={pendientes} seleccionado={invitadoArrastrado} onArrastrar={setInvitadoArrastrado} />
           <SeccionInvitados titulo="No confirmados" color="var(--color-coral)" invitados={noConfirmados} seleccionado={invitadoArrastrado} onArrastrar={setInvitadoArrastrado} />
@@ -144,12 +153,25 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>Mesas</span>
+            <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => exportarMesasExcel(boda, mesas, invitados)}
+              disabled={mesas.length === 0}
+              style={{
+                fontSize: 13, background: 'transparent', border: '0.5px solid var(--color-border)',
+                borderRadius: 8, padding: '6px 14px', color: 'var(--color-text-secondary)',
+                cursor: mesas.length === 0 ? 'not-allowed' : 'pointer',
+              }}
+            >
+              Exportar Excel
+            </button>
             <button
               onClick={() => setMostrarFormMesa(!mostrarFormMesa)}
               style={{ fontSize: 13, background: 'var(--color-sage)', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px' }}
             >
               {mostrarFormMesa ? 'Cancelar' : '+ Crear mesa'}
             </button>
+            </div>
           </div>
 
           {mostrarFormMesa && (

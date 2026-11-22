@@ -4,6 +4,7 @@ import { db } from '../lib/firebaseClient'
 import { coincideBusqueda } from '../lib/texto'
 import { quitarInvitadoDeMesas, actualizarLugaresEnMesas } from '../lib/mesaHelpers'
 import ImportarExcel from './ImportarExcel'
+import { exportarInvitadosExcel } from '../lib/exportarExcel'
 
 const LADAS = [
   { codigo: '+52', pais: 'México' },
@@ -131,6 +132,22 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
     cargarInvitados()
   }
 
+  // Exporta a Excel: hoja "Asistentes" (confirmados) y "Todos los invitados".
+  // Lee las mesas al momento para incluir en qué mesa está sentado cada uno.
+  const [exportando, setExportando] = useState(false)
+  async function exportarExcel() {
+    setExportando(true)
+    try {
+      const mesasSnap = await getDocs(collection(db, 'bodas', boda.id, 'mesas'))
+      const mesas = mesasSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+      exportarInvitadosExcel(boda, invitados, mesas)
+    } catch (e) {
+      // Si no se pudieron leer las mesas, exporta igual sin la columna de mesa llena
+      exportarInvitadosExcel(boda, invitados, [])
+    }
+    setExportando(false)
+  }
+
   function abrirWhatsapp(invitado) {
     if (!invitado.telefono) return
     const numero = `${invitado.lada}${invitado.telefono}`.replace(/[^\d+]/g, '')
@@ -224,6 +241,17 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
             }}
           >
             Importar Excel
+          </button>
+          <button
+            onClick={exportarExcel}
+            disabled={exportando || invitados.length === 0}
+            style={{
+              fontSize: 13, background: 'transparent', border: '0.5px solid var(--color-border)',
+              borderRadius: 8, padding: '6px 14px', color: 'var(--color-text-secondary)',
+              cursor: invitados.length === 0 ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {exportando ? 'Exportando…' : 'Exportar Excel'}
           </button>
           <button
             onClick={() => setMostrarFormulario(!mostrarFormulario)}
