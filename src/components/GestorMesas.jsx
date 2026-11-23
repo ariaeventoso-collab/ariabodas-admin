@@ -323,7 +323,14 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
         {/* Columna derecha: mesas */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>Mesas</span>
+            <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
+              Mesas
+              {mesas.length > 0 && (
+                <span style={{ color: 'var(--color-text-muted)', marginLeft: 6 }}>
+                  · {mesas.length} {mesas.length === 1 ? 'mesa' : 'mesas'}
+                </span>
+              )}
+            </span>
             <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={() => exportarMesasExcel(boda, mesas, invitados)}
@@ -442,6 +449,10 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, gap: 6, flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {/* Número de la mesa según su lugar en la lista */}
+                      <span style={{ fontSize: 11, color: 'var(--color-text-muted)', minWidth: 14, fontVariantNumeric: 'tabular-nums' }}>
+                        {indiceMesa + 1}
+                      </span>
                       {/* Señal visual de que la mesa se puede arrastrar */}
                       {!ES_TACTIL && (
                         <span
