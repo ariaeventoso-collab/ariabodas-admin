@@ -35,6 +35,7 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
   const [mesaEditando, setMesaEditando] = useState(null)
   const [procesando, setProcesando] = useState(false)
   const [busqueda, setBusqueda] = useState('')
+  const [busquedaMesas, setBusquedaMesas] = useState('') // buscar personas ya sentadas
   const [mesaArrastrada, setMesaArrastrada] = useState(null) // id de la mesa que se está moviendo
 
   useEffect(() => {
@@ -85,6 +86,11 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
   const invitadosLibres = invitados
     .filter(i => !idsAsignados.has(i.id))
     .filter(i => coincideBusqueda(i.nombre_familia, busqueda))
+
+  // Buscador de mesas: solo deja las mesas donde está sentada esa persona
+  const mesasVisibles = busquedaMesas.trim()
+    ? mesas.filter(m => m.asignaciones.some(a => coincideBusqueda(a.nombre_familia, busquedaMesas)))
+    : mesas
 
   const confirmados = invitadosLibres.filter(i => i.estado_rsvp === 'confirmado')
   const pendientes = invitadosLibres.filter(i => i.estado_rsvp === 'pendiente')
@@ -379,8 +385,45 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
             </div>
           )}
 
+          {/* Buscador: ¿en qué mesa está esta persona? */}
+          {mesas.length > 0 && (
+            <div style={{ position: 'relative', marginBottom: 12 }}>
+              <input
+                type="text"
+                value={busquedaMesas}
+                onChange={e => setBusquedaMesas(e.target.value)}
+                placeholder="Buscar en qué mesa está alguien…"
+                style={{
+                  width: '100%', padding: '8px 30px 8px 10px', border: '0.5px solid var(--color-border)',
+                  borderRadius: 8, fontSize: 13, fontFamily: 'var(--font-sans)', boxSizing: 'border-box',
+                  background: 'var(--color-surface)',
+                }}
+              />
+              {busquedaMesas && (
+                <button
+                  onClick={() => setBusquedaMesas('')}
+                  title="Borrar búsqueda"
+                  style={{
+                    position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                    background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 13,
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          )}
+
+          {busquedaMesas.trim() && mesasVisibles.length === 0 && (
+            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '0 0 12px' }}>
+              Nadie sentado en una mesa coincide con "{busquedaMesas}".
+            </p>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
-            {mesas.map((mesa, indiceMesa) => {
+            {mesasVisibles.map(mesa => {
+              // Número real de la mesa (no cambia aunque estés buscando)
+              const indiceMesa = mesas.indexOf(mesa)
               const ocupados = mesa.asignaciones.reduce((acc, a) => acc + (a.lugares_ocupados || 0), 0)
               const lleno = ocupados >= mesa.capacidad
 
@@ -519,6 +562,7 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
                     const invitadoActual = invitados.find(i => i.id === a.invitado_id)
                     const esPendiente = invitadoActual?.estado_rsvp === 'pendiente' || !invitadoActual?.estado_rsvp
                     const seleccionado = invitadoArrastrado?.id === a.invitado_id
+                    const coincide = busquedaMesas.trim() && coincideBusqueda(a.nombre_familia, busquedaMesas)
                     const datosParaMover = {
                       ...(invitadoActual || {}),
                       id: a.invitado_id,
@@ -543,8 +587,9 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
                           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                           fontSize: 12, borderRadius: 8, padding: '6px 10px', marginBottom: 4, cursor: 'grab',
                           background: seleccionado ? 'var(--color-sage-light)' : 'var(--color-surface-muted)',
-                          outline: seleccionado ? '1px solid var(--color-sage)' : 'none',
-                          opacity: esPendiente && !seleccionado ? 0.55 : 1,
+                          outline: seleccionado || coincide ? '1px solid var(--color-sage)' : 'none',
+                          fontWeight: coincide ? 600 : 'normal',
+                          opacity: esPendiente && !seleccionado && !coincide ? 0.55 : 1,
                         }}
                       >
                         <span style={{ color: esPendiente ? 'var(--color-text-muted)' : 'inherit' }}>
