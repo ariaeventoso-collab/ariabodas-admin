@@ -5,6 +5,13 @@ import { asignarInvitadoAMesa, quitarDeMesaEspecifica, corregirMesasDesactualiza
 import { exportarMesasExcel } from '../lib/exportarExcel'
 import { coincideBusqueda } from '../lib/texto'
 
+// En computadora (mouse) los invitados SOLO se asignan arrastrando: un clic
+// no hace nada, para no sentar a nadie por accidente. En celular/tableta
+// (pantalla táctil) el navegador no permite arrastrar, así que ahí se usa
+// "toca al invitado y luego toca la mesa".
+const ES_TACTIL = typeof window !== 'undefined'
+  && window.matchMedia?.('(hover: none) and (pointer: coarse)').matches
+
 // Orden en que se muestran las mesas: el que tú elijas (campo "orden").
 // Las mesas viejas sin orden van al final, ordenadas por nombre
 // ("Mesa 2" antes que "Mesa 10").
@@ -250,10 +257,14 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
 
       <p style={{ fontSize: 13, color: invitadoArrastrado ? 'var(--color-sage-text)' : 'var(--color-text-muted)', margin: '0 0 1.5rem' }}>
         {invitadoArrastrado
-          ? invitadoArrastrado.mesaOrigenId
-            ? `"${invitadoArrastrado.nombre_familia}" seleccionado — toca otra mesa para cambiarlo, o tócalo de nuevo para cancelar`
-            : `"${invitadoArrastrado.nombre_familia}" seleccionado — toca una mesa para asignarlo, o toca de nuevo para cancelar`
-          : 'Arrastra un invitado hacia una mesa (o tócalo y luego toca la mesa). Para cambiar de mesa, arrastra o toca a alguien que ya esté sentado. Para mover una mesa de lugar, arrástrala desde ⠿ o usa las flechas ◀ ▶.'}
+          ? !ES_TACTIL
+            ? `Suelta a "${invitadoArrastrado.nombre_familia}" en una mesa`
+            : invitadoArrastrado.mesaOrigenId
+              ? `"${invitadoArrastrado.nombre_familia}" seleccionado — toca otra mesa para cambiarlo, o tócalo de nuevo para cancelar`
+              : `"${invitadoArrastrado.nombre_familia}" seleccionado — toca una mesa para asignarlo, o toca de nuevo para cancelar`
+          : ES_TACTIL
+            ? 'Toca un invitado y luego toca la mesa. Para cambiar de mesa, toca a alguien que ya esté sentado. Para mover una mesa de lugar, usa las flechas ◀ ▶.'
+            : 'Arrastra un invitado hacia una mesa. Para cambiar de mesa, arrastra a alguien que ya esté sentado. Para mover una mesa de lugar, arrástrala desde ⠿ o usa las flechas ◀ ▶.'}
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20, alignItems: 'start' }}>
@@ -408,14 +419,14 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
                   key={mesa.id}
                   onDragOver={e => e.preventDefault()}
                   onDrop={() => { if (mesaArrastrada) soltarMesaSobre(mesa.id); else soltarEnMesa(mesa) }}
-                  onClick={() => { if (invitadoArrastrado) soltarEnMesa(mesa) }}
+                  onClick={() => { if (ES_TACTIL && invitadoArrastrado) soltarEnMesa(mesa) }}
                   style={{
                     background: 'var(--color-surface)',
                     border: (invitadoArrastrado || (mesaArrastrada && mesaArrastrada !== mesa.id))
                       ? '1.5px dashed var(--color-sage)' : '0.5px solid var(--color-border)',
                     borderRadius: 14, padding: '14px 16px', minHeight: 120,
                     boxShadow: '0 1px 2px rgba(28,28,28,0.04)',
-                    cursor: invitadoArrastrado ? (procesando ? 'wait' : 'pointer') : 'default',
+                    cursor: procesando ? 'wait' : (ES_TACTIL && invitadoArrastrado ? 'pointer' : 'default'),
                     opacity: mesaArrastrada === mesa.id ? 0.4 : (procesando ? 0.7 : 1),
                   }}
                 >
@@ -503,8 +514,10 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
                         key={a.invitado_id}
                         draggable
                         onDragStart={e => { e.stopPropagation(); setInvitadoArrastrado(datosParaMover) }}
+                        onDragEnd={() => setInvitadoArrastrado(null)}
                         onClick={e => {
                           e.stopPropagation()
+                          if (!ES_TACTIL) return
                           if (seleccionado) setInvitadoArrastrado(null)
                           else if (invitadoArrastrado) soltarEnMesa(mesa)
                           else setInvitadoArrastrado(datosParaMover)
@@ -546,6 +559,7 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
 
 function SeccionInvitados({ titulo, color, invitados, seleccionado, onArrastrar }) {
   function manejarClick(inv) {
+    if (!ES_TACTIL) return // en computadora solo se arrastra
     // Toggle: si ya estaba seleccionado este mismo invitado, lo deselecciona
     onArrastrar(seleccionado?.id === inv.id ? null : inv)
   }
@@ -568,6 +582,7 @@ function SeccionInvitados({ titulo, color, invitados, seleccionado, onArrastrar 
             key={inv.id}
             draggable
             onDragStart={() => onArrastrar(inv)}
+            onDragEnd={() => onArrastrar(null)}
             onClick={() => manejarClick(inv)}
             style={{
               background: activo ? 'var(--color-sage-light)' : 'var(--color-surface)',
