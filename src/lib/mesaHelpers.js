@@ -144,6 +144,40 @@ export async function corregirMesasDesactualizadas(bodaId, mesas, invitados) {
 }
 
 /**
+ * Cambia a un invitado de una mesa a otra en UNA sola transacción:
+ * o se hacen los dos pasos (sacarlo de la mesa vieja y meterlo en la
+ * nueva) o no se hace ninguno, para que nunca quede en dos mesas ni en
+ * ninguna. Igual que asignarInvitadoAMesa, avisa si excede capacidad
+ * antes de escribir; el caller vuelve a llamar con forzar=true.
+ */
+export async function moverInvitadoDeMesa(bodaId, mesaOrigenId, mesaDestinoId, invitadoId, forzar = false) {
+  const origenRef = doc(db, 'bodas', bodaId, 'mesas', mesaOrigenId)
+  const destinoRef = doc(db, 'bodas', bodaId, 'mesas', mesaDestinoId)
+
+  return runTransaction(db, async (tx) => {
+    const origenSnap = await tx.get(origenRef)
+    const destinoSnap = await tx.get(destinoRef)
+    if (!origenSnap.exists() || !destinoSnap.exists()) return { ok: false, motivo: 'mesa_no_existe' }
+
+    const origen = origenSnap.data().asignaciones || []
+    const destino = destinoSnap.data().asignaciones || []
+    const asignacion = origen.find(a => a.invitado_id === invitadoId)
+    if (!asignacion) return { ok: false, motivo: 'ya_no_esta' }
+    if (destino.some(a => a.invitado_id === invitadoId)) return { ok: false, motivo: 'ya_asignado' }
+
+    const capacidad = destinoSnap.data().capacidad
+    const ocupados = destino.reduce((acc, a) => acc + (a.lugares_ocupados || 0), 0)
+    if (ocupados + (asignacion.lugares_ocupados || 0) > capacidad && !forzar) {
+      return { ok: false, motivo: 'excede_capacidad', ocupados, capacidad }
+    }
+
+    tx.update(origenRef, { asignaciones: origen.filter(a => a.invitado_id !== invitadoId) })
+    tx.update(destinoRef, { asignaciones: [...destino, asignacion] })
+    return { ok: true }
+  })
+}
+
+/**
  * Quita a un invitado de una mesa específica, transaccional.
  */
 export async function quitarDeMesaEspecifica(bodaId, mesaId, invitadoId) {

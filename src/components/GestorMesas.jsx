@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
-import { asignarInvitadoAMesa, quitarDeMesaEspecifica, corregirMesasDesactualizadas } from '../lib/mesaHelpers'
+import { asignarInvitadoAMesa, quitarDeMesaEspecifica, corregirMesasDesactualizadas, moverInvitadoDeMesa } from '../lib/mesaHelpers'
 import { exportarMesasExcel } from '../lib/exportarExcel'
 import { coincideBusqueda } from '../lib/texto'
 
@@ -67,12 +67,25 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
 
   async function soltarEnMesa(mesa) {
     if (!invitadoArrastrado || procesando) return
+
+    // Si viene de una mesa y lo sueltan en esa misma mesa, no hay nada que hacer
+    const origenId = invitadoArrastrado.mesaOrigenId
+    if (origenId === mesa.id) {
+      setInvitadoArrastrado(null)
+      return
+    }
+
     setProcesando(true)
 
     try {
+      // Si ya estaba sentado en otra mesa, se CAMBIA de mesa; si no, se asigna.
       // Primer intento sin forzar: si excede capacidad, la transacción nos
       // avisa sin escribir nada todavía.
-      let resultado = await asignarInvitadoAMesa(boda.id, mesa.id, invitadoArrastrado, false)
+      const intentar = (forzar) => origenId
+        ? moverInvitadoDeMesa(boda.id, origenId, mesa.id, invitadoArrastrado.id, forzar)
+        : asignarInvitadoAMesa(boda.id, mesa.id, invitadoArrastrado, forzar)
+
+      let resultado = await intentar(false)
 
       if (!resultado.ok && resultado.motivo === 'excede_capacidad') {
         const continuar = window.confirm(
@@ -80,7 +93,7 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
           `Agregar a "${invitadoArrastrado.nombre_familia}" va a exceder el límite. ¿Agregar de todas formas?`
         )
         if (continuar) {
-          resultado = await asignarInvitadoAMesa(boda.id, mesa.id, invitadoArrastrado, true)
+          resultado = await intentar(true)
         }
       }
 
@@ -123,6 +136,19 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
     cargarTodo()
   }
 
+  // Soltar en la lista de la izquierda a alguien que venía de una mesa = quitarlo de la mesa
+  async function soltarEnLista() {
+    if (!invitadoArrastrado?.mesaOrigenId || procesando) return
+    setProcesando(true)
+    try {
+      await quitarDeMesaEspecifica(boda.id, invitadoArrastrado.mesaOrigenId, invitadoArrastrado.id)
+      setInvitadoArrastrado(null)
+      await cargarTodo()
+    } finally {
+      setProcesando(false)
+    }
+  }
+
   if (cargando) {
     return <p style={{ padding: '2rem', fontSize: 14, color: 'var(--color-text-muted)' }}>Cargando…</p>
   }
@@ -141,8 +167,10 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
 
       <p style={{ fontSize: 13, color: invitadoArrastrado ? 'var(--color-sage-text)' : 'var(--color-text-muted)', margin: '0 0 1.5rem' }}>
         {invitadoArrastrado
-          ? `"${invitadoArrastrado.nombre_familia}" seleccionado — toca una mesa para asignarlo, o toca de nuevo para cancelar`
-          : 'Arrastra un invitado hacia una mesa (o tócalo y luego toca la mesa, en pantallas táctiles)'}
+          ? invitadoArrastrado.mesaOrigenId
+            ? `"${invitadoArrastrado.nombre_familia}" seleccionado — toca otra mesa para cambiarlo, o tócalo de nuevo para cancelar`
+            : `"${invitadoArrastrado.nombre_familia}" seleccionado — toca una mesa para asignarlo, o toca de nuevo para cancelar`
+          : 'Arrastra un invitado hacia una mesa (o tócalo y luego toca la mesa). Para cambiar de mesa, arrastra o toca a alguien que ya esté sentado.'}
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20, alignItems: 'start' }}>
@@ -156,7 +184,10 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
           maxHeight: 'calc(100vh - 32px)', overflowY: 'auto',
           overscrollBehavior: 'contain',
           paddingRight: 6,
-        }}>
+        }}
+          onDragOver={e => { if (invitadoArrastrado?.mesaOrigenId) e.preventDefault() }}
+          onDrop={soltarEnLista}
+        >
           {/* Buscador: se queda arriba aunque deslices la lista */}
           <div style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--color-bg)', paddingBottom: 10 }}>
             <div style={{ position: 'relative' }}>
@@ -318,13 +349,13 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
                         {ocupados}/{mesa.capacidad}
                       </span>
                       <button
-                        onClick={() => setMesaEditando({ ...mesa })}
+                        onClick={e => { e.stopPropagation(); setMesaEditando({ ...mesa }) }}
                         style={{ background: 'none', border: 'none', color: 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 11 }}
                       >
                         Editar
                       </button>
                       <button
-                        onClick={() => eliminarMesa(mesa)}
+                        onClick={e => { e.stopPropagation(); eliminarMesa(mesa) }}
                         style={{ background: 'none', border: 'none', color: 'var(--color-coral-text)', cursor: 'pointer', fontSize: 11 }}
                       >
                         Eliminar
@@ -341,18 +372,39 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
                   {mesa.asignaciones.map(a => {
                     const invitadoActual = invitados.find(i => i.id === a.invitado_id)
                     const esPendiente = invitadoActual?.estado_rsvp === 'pendiente' || !invitadoActual?.estado_rsvp
+                    const seleccionado = invitadoArrastrado?.id === a.invitado_id
+                    const datosParaMover = {
+                      ...(invitadoActual || {}),
+                      id: a.invitado_id,
+                      nombre_familia: a.nombre_familia,
+                      mesaOrigenId: mesa.id,
+                    }
                     return (
-                      <div key={a.invitado_id} style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        fontSize: 12, background: 'var(--color-surface-muted)', borderRadius: 8, padding: '6px 10px', marginBottom: 4,
-                        opacity: esPendiente ? 0.55 : 1,
-                      }}>
+                      <div
+                        key={a.invitado_id}
+                        draggable
+                        onDragStart={e => { e.stopPropagation(); setInvitadoArrastrado(datosParaMover) }}
+                        onClick={e => {
+                          e.stopPropagation()
+                          if (seleccionado) setInvitadoArrastrado(null)
+                          else if (invitadoArrastrado) soltarEnMesa(mesa)
+                          else setInvitadoArrastrado(datosParaMover)
+                        }}
+                        title="Arrastra o toca para cambiar de mesa"
+                        style={{
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          fontSize: 12, borderRadius: 8, padding: '6px 10px', marginBottom: 4, cursor: 'grab',
+                          background: seleccionado ? 'var(--color-sage-light)' : 'var(--color-surface-muted)',
+                          outline: seleccionado ? '1px solid var(--color-sage)' : 'none',
+                          opacity: esPendiente && !seleccionado ? 0.55 : 1,
+                        }}
+                      >
                         <span style={{ color: esPendiente ? 'var(--color-text-muted)' : 'inherit' }}>
                           {a.nombre_familia} ({a.lugares_ocupados})
                           {esPendiente && <span style={{ fontSize: 10, marginLeft: 6, fontStyle: 'italic' }}>sin confirmar</span>}
                         </span>
                         <button
-                          onClick={() => quitarDeMesa(mesa, a.invitado_id)}
+                          onClick={e => { e.stopPropagation(); quitarDeMesa(mesa, a.invitado_id) }}
                           style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 12 }}
                         >
                           ✕
