@@ -39,7 +39,9 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
   }, [])
 
   async function cargarInvitados() {
-    setCargando(true)
+    // Sin setCargando(true): al recargar después de un cambio, los datos
+    // se actualizan sin borrar la pantalla ni regresarte hasta arriba.
+    // El "Cargando…" solo aparece la primera vez (useState(true)).
     const invitadosRef = collection(db, 'bodas', boda.id, 'invitados')
     const q = query(invitadosRef, orderBy('nombre_familia'))
     const snap = await getDocs(q)

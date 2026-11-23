@@ -95,7 +95,9 @@ export default function AdminPanel() {
   }, [])
 
   async function cargarBodas() {
-    setCargando(true)
+    // Sin setCargando(true): al recargar después de un cambio, los datos
+    // se actualizan sin borrar la pantalla ni regresarte hasta arriba.
+    // El "Cargando…" solo aparece la primera vez (useState(true)).
     setError(null)
 
     try {

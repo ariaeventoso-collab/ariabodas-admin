@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
-import { asignarInvitadoAMesa, quitarDeMesaEspecifica, corregirMesasDesactualizadas, moverInvitadoDeMesa } from '../lib/mesaHelpers'
+import { asignarInvitadoAMesa, quitarDeMesaEspecifica, corregirMesasDesactualizadas, moverInvitadoDeMesa, lugaresDeInvitado } from '../lib/mesaHelpers'
 import { exportarMesasExcel } from '../lib/exportarExcel'
 import { coincideBusqueda } from '../lib/texto'
 
@@ -22,7 +22,9 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
   }, [])
 
   async function cargarTodo() {
-    setCargando(true)
+    // Sin setCargando(true): al recargar después de un cambio, los datos
+    // se actualizan sin borrar la pantalla ni regresarte hasta arriba.
+    // El "Cargando…" solo aparece la primera vez (useState(true)).
     const invitadosSnap = await getDocs(
       query(collection(db, 'bodas', boda.id, 'invitados'), orderBy('nombre_familia'))
     )
@@ -100,6 +102,26 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
       // Si motivo === 'ya_asignado', es un doble-submit (doble clic/soltar
       // duplicado): no hacemos nada, el invitado ya quedó en la mesa desde
       // el intento anterior. Esto es justo lo que evita el duplicado.
+
+      // Si salió bien, se refleja en pantalla de inmediato (sin esperar a
+      // volver a leer todo) y luego se sincroniza en silencio.
+      if (resultado.ok) {
+        const inv = invitadoArrastrado
+        setMesas(prev => {
+          const asignacionPrevia = prev
+            .find(m => m.id === origenId)?.asignaciones.find(a => a.invitado_id === inv.id)
+          const nueva = asignacionPrevia || {
+            invitado_id: inv.id,
+            nombre_familia: inv.nombre_familia,
+            lugares_ocupados: lugaresDeInvitado(inv),
+          }
+          return prev.map(m => {
+            if (m.id === origenId) return { ...m, asignaciones: m.asignaciones.filter(a => a.invitado_id !== inv.id) }
+            if (m.id === mesa.id) return { ...m, asignaciones: [...m.asignaciones, nueva] }
+            return m
+          })
+        })
+      }
 
       setInvitadoArrastrado(null)
       cargarTodo()

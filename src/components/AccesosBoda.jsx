@@ -20,7 +20,9 @@ export default function AccesosBoda({ boda }) {
   }, [])
 
   async function cargarAccesos() {
-    setCargando(true)
+    // Sin setCargando(true): al recargar después de un cambio, los datos
+    // se actualizan sin borrar la pantalla ni regresarte hasta arriba.
+    // El "Cargando…" solo aparece la primera vez (useState(true)).
     const q = query(collection(db, 'usuarios'), where('boda_id', '==', boda.id))
     const snap = await getDocs(q)
     setAccesos(snap.docs.map(d => ({ id: d.id, ...d.data() })))

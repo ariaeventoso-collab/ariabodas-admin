@@ -11,7 +11,9 @@ export default function MensajesBoda({ boda }) {
   }, [])
 
   async function cargarMensajes() {
-    setCargando(true)
+    // Sin setCargando(true): al recargar después de un cambio, los datos
+    // se actualizan sin borrar la pantalla ni regresarte hasta arriba.
+    // El "Cargando…" solo aparece la primera vez (useState(true)).
     const q = query(collection(db, 'bodas', boda.id, 'invitados'), orderBy('actualizado_en', 'desc'))
     const snap = await getDocs(q)
     const conMensaje = snap.docs
