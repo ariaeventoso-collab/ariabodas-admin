@@ -1,9 +1,21 @@
 import { useEffect, useState } from 'react'
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore'
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, writeBatch } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
 import { asignarInvitadoAMesa, quitarDeMesaEspecifica, corregirMesasDesactualizadas, moverInvitadoDeMesa, lugaresDeInvitado } from '../lib/mesaHelpers'
 import { exportarMesasExcel } from '../lib/exportarExcel'
 import { coincideBusqueda } from '../lib/texto'
+
+// Orden en que se muestran las mesas: el que tú elijas (campo "orden").
+// Las mesas viejas sin orden van al final, ordenadas por nombre
+// ("Mesa 2" antes que "Mesa 10").
+function ordenarMesas(lista) {
+  return [...lista].sort((a, b) => {
+    const oa = a.orden ?? Infinity
+    const ob = b.orden ?? Infinity
+    if (oa !== ob) return oa - ob
+    return String(a.nombre).localeCompare(String(b.nombre), 'es', { numeric: true })
+  })
+}
 
 export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
   const [invitados, setInvitados] = useState([])
@@ -16,6 +28,7 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
   const [mesaEditando, setMesaEditando] = useState(null)
   const [procesando, setProcesando] = useState(false)
   const [busqueda, setBusqueda] = useState('')
+  const [mesaArrastrada, setMesaArrastrada] = useState(null) // id de la mesa que se está moviendo
 
   useEffect(() => {
     cargarTodo()
@@ -38,17 +51,20 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
       // Si no se pudo corregir, se muestran como están
     }
     setInvitados(listaInvitados)
-    setMesas(listaMesas)
+    setMesas(ordenarMesas(listaMesas))
     setCargando(false)
   }
 
   async function crearMesa(e) {
     e.preventDefault()
     if (!nombreMesa.trim()) return
+    // La mesa nueva se agrega al final
+    const ultimoOrden = mesas.reduce((max, m, i) => Math.max(max, m.orden ?? i), -1)
     await addDoc(collection(db, 'bodas', boda.id, 'mesas'), {
       nombre: nombreMesa.trim(),
       capacidad: Number(capacidadMesa),
       asignaciones: [],
+      orden: ultimoOrden + 1,
     })
     setNombreMesa('')
     setCapacidadMesa(8)
@@ -130,6 +146,51 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
     }
   }
 
+  // ============================================
+  // Cambiar el lugar de las mesas
+  // ============================================
+  // Guarda el nuevo orden: se ve al instante y luego se guarda en Firestore
+  async function guardarOrden(nuevaLista) {
+    const conOrden = nuevaLista.map((m, i) => ({ ...m, orden: i }))
+    setMesas(conOrden)
+    const batch = writeBatch(db)
+    conOrden.forEach((m, i) => {
+      if (mesas.find(x => x.id === m.id)?.orden !== i) {
+        batch.update(doc(db, 'bodas', boda.id, 'mesas', m.id), { orden: i })
+      }
+    })
+    try {
+      await batch.commit()
+    } catch (e) {
+      window.alert('No se pudo guardar el nuevo orden de las mesas. Intenta de nuevo.')
+      cargarTodo()
+    }
+  }
+
+  // Arrastrar una mesa y soltarla sobre otra: toma el lugar de esa otra
+  function soltarMesaSobre(destinoId) {
+    const origenId = mesaArrastrada
+    setMesaArrastrada(null)
+    if (!origenId || origenId === destinoId) return
+    const lista = [...mesas]
+    const desde = lista.findIndex(m => m.id === origenId)
+    const hacia = lista.findIndex(m => m.id === destinoId)
+    if (desde < 0 || hacia < 0) return
+    const [movida] = lista.splice(desde, 1)
+    lista.splice(hacia, 0, movida)
+    guardarOrden(lista)
+  }
+
+  // Flechas ◀ ▶: mueve una mesa un lugar (útil en celular)
+  function moverMesaUnLugar(mesaId, paso) {
+    const lista = [...mesas]
+    const i = lista.findIndex(m => m.id === mesaId)
+    const j = i + paso
+    if (i < 0 || j < 0 || j >= lista.length) return
+    ;[lista[i], lista[j]] = [lista[j], lista[i]]
+    guardarOrden(lista)
+  }
+
   async function guardarEdicionMesa(e) {
     e.preventDefault()
     if (!mesaEditando.nombre.trim()) return
@@ -192,7 +253,7 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
           ? invitadoArrastrado.mesaOrigenId
             ? `"${invitadoArrastrado.nombre_familia}" seleccionado — toca otra mesa para cambiarlo, o tócalo de nuevo para cancelar`
             : `"${invitadoArrastrado.nombre_familia}" seleccionado — toca una mesa para asignarlo, o toca de nuevo para cancelar`
-          : 'Arrastra un invitado hacia una mesa (o tócalo y luego toca la mesa). Para cambiar de mesa, arrastra o toca a alguien que ya esté sentado.'}
+          : 'Arrastra un invitado hacia una mesa (o tócalo y luego toca la mesa). Para cambiar de mesa, arrastra o toca a alguien que ya esté sentado. Para mover una mesa de lugar, arrástrala desde ⠿ o usa las flechas ◀ ▶.'}
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20, alignItems: 'start' }}>
@@ -301,7 +362,7 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
           )}
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
-            {mesas.map(mesa => {
+            {mesas.map((mesa, indiceMesa) => {
               const ocupados = mesa.asignaciones.reduce((acc, a) => acc + (a.lugares_ocupados || 0), 0)
               const lleno = ocupados >= mesa.capacidad
 
@@ -346,21 +407,41 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
                 <div
                   key={mesa.id}
                   onDragOver={e => e.preventDefault()}
-                  onDrop={() => soltarEnMesa(mesa)}
+                  onDrop={() => { if (mesaArrastrada) soltarMesaSobre(mesa.id); else soltarEnMesa(mesa) }}
                   onClick={() => { if (invitadoArrastrado) soltarEnMesa(mesa) }}
                   style={{
                     background: 'var(--color-surface)',
-                    border: invitadoArrastrado ? '1.5px dashed var(--color-sage)' : '0.5px solid var(--color-border)',
+                    border: (invitadoArrastrado || (mesaArrastrada && mesaArrastrada !== mesa.id))
+                      ? '1.5px dashed var(--color-sage)' : '0.5px solid var(--color-border)',
                     borderRadius: 14, padding: '14px 16px', minHeight: 120,
                     boxShadow: '0 1px 2px rgba(28,28,28,0.04)',
                     cursor: invitadoArrastrado ? (procesando ? 'wait' : 'pointer') : 'default',
-                    opacity: procesando ? 0.7 : 1,
+                    opacity: mesaArrastrada === mesa.id ? 0.4 : (procesando ? 0.7 : 1),
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                    <p style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 17, margin: 0, color: 'var(--color-text-primary)' }}>
-                      {mesa.nombre}
-                    </p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, gap: 6, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {/* Agarradera para arrastrar la mesa a otro lugar */}
+                      <span
+                        draggable
+                        onDragStart={e => {
+                          e.stopPropagation()
+                          e.dataTransfer.effectAllowed = 'move'
+                          e.dataTransfer.setData('text/plain', mesa.id)
+                          setInvitadoArrastrado(null)
+                          setMesaArrastrada(mesa.id)
+                        }}
+                        onDragEnd={() => setMesaArrastrada(null)}
+                        onClick={e => e.stopPropagation()}
+                        title="Arrastra para cambiar la mesa de lugar"
+                        style={{ cursor: 'grab', color: 'var(--color-text-muted)', fontSize: 15, lineHeight: 1, userSelect: 'none' }}
+                      >
+                        ⠿
+                      </span>
+                      <p style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 17, margin: 0, color: 'var(--color-text-primary)' }}>
+                        {mesa.nombre}
+                      </p>
+                    </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span style={{
                         fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase',
@@ -381,6 +462,22 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
                         style={{ background: 'none', border: 'none', color: 'var(--color-coral-text)', cursor: 'pointer', fontSize: 11 }}
                       >
                         Eliminar
+                      </button>
+                      <button
+                        onClick={e => { e.stopPropagation(); moverMesaUnLugar(mesa.id, -1) }}
+                        disabled={indiceMesa === 0}
+                        title="Mover antes"
+                        style={{ ...flechaEstilo, opacity: indiceMesa === 0 ? 0.3 : 1 }}
+                      >
+                        ◀
+                      </button>
+                      <button
+                        onClick={e => { e.stopPropagation(); moverMesaUnLugar(mesa.id, 1) }}
+                        disabled={indiceMesa === mesas.length - 1}
+                        title="Mover después"
+                        style={{ ...flechaEstilo, opacity: indiceMesa === mesas.length - 1 ? 0.3 : 1 }}
+                      >
+                        ▶
                       </button>
                     </div>
                   </div>
@@ -486,4 +583,9 @@ function SeccionInvitados({ titulo, color, invitados, seleccionado, onArrastrar 
       })}
     </div>
   )
+}
+
+const flechaEstilo = {
+  background: 'none', border: 'none', color: 'var(--color-text-secondary)',
+  cursor: 'pointer', fontSize: 10, padding: 0,
 }

@@ -49,11 +49,15 @@ function mapaMesaPorInvitado(mesas) {
   return mapa
 }
 
-// Ordena mesas tipo "Mesa 2" antes que "Mesa 10"
+// Mismo orden que en pantalla (el que elegiste moviendo las mesas);
+// las que no tienen orden van al final por nombre ("Mesa 2" antes que "Mesa 10")
 function ordenarMesas(mesas) {
-  return [...(mesas || [])].sort((a, b) =>
-    String(a.nombre).localeCompare(String(b.nombre), 'es', { numeric: true })
-  )
+  return [...(mesas || [])].sort((a, b) => {
+    const oa = a.orden ?? Infinity
+    const ob = b.orden ?? Infinity
+    if (oa !== ob) return oa - ob
+    return String(a.nombre).localeCompare(String(b.nombre), 'es', { numeric: true })
+  })
 }
 
 // ============================================
