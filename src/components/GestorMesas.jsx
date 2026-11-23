@@ -264,7 +264,7 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
               : `"${invitadoArrastrado.nombre_familia}" seleccionado — toca una mesa para asignarlo, o toca de nuevo para cancelar`
           : ES_TACTIL
             ? 'Toca un invitado y luego toca la mesa. Para cambiar de mesa, toca a alguien que ya esté sentado. Para mover una mesa de lugar, usa las flechas ◀ ▶.'
-            : 'Arrastra un invitado hacia una mesa. Para cambiar de mesa, arrastra a alguien que ya esté sentado. Para mover una mesa de lugar, arrástrala desde ⠿ o usa las flechas ◀ ▶.'}
+            : 'Arrastra un invitado hacia una mesa. Para cambiar de mesa, arrastra a alguien que ya esté sentado. Para mover una mesa de lugar, arrástrala y suéltala sobre otra mesa.'}
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20, alignItems: 'start' }}>
@@ -417,6 +417,16 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
               return (
                 <div
                   key={mesa.id}
+                  // Toda la tarjeta se puede arrastrar para cambiar la mesa de lugar
+                  // (en computadora). Los invitados de adentro se arrastran aparte.
+                  draggable={!ES_TACTIL}
+                  onDragStart={e => {
+                    e.dataTransfer.effectAllowed = 'move'
+                    e.dataTransfer.setData('text/plain', mesa.id)
+                    setInvitadoArrastrado(null)
+                    setMesaArrastrada(mesa.id)
+                  }}
+                  onDragEnd={() => setMesaArrastrada(null)}
                   onDragOver={e => e.preventDefault()}
                   onDrop={() => { if (mesaArrastrada) soltarMesaSobre(mesa.id); else soltarEnMesa(mesa) }}
                   onClick={() => { if (ES_TACTIL && invitadoArrastrado) soltarEnMesa(mesa) }}
@@ -426,29 +436,21 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
                       ? '1.5px dashed var(--color-sage)' : '0.5px solid var(--color-border)',
                     borderRadius: 14, padding: '14px 16px', minHeight: 120,
                     boxShadow: '0 1px 2px rgba(28,28,28,0.04)',
-                    cursor: procesando ? 'wait' : (ES_TACTIL && invitadoArrastrado ? 'pointer' : 'default'),
+                    cursor: procesando ? 'wait' : (ES_TACTIL ? (invitadoArrastrado ? 'pointer' : 'default') : 'grab'),
                     opacity: mesaArrastrada === mesa.id ? 0.4 : (procesando ? 0.7 : 1),
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, gap: 6, flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {/* Agarradera para arrastrar la mesa a otro lugar */}
-                      <span
-                        draggable
-                        onDragStart={e => {
-                          e.stopPropagation()
-                          e.dataTransfer.effectAllowed = 'move'
-                          e.dataTransfer.setData('text/plain', mesa.id)
-                          setInvitadoArrastrado(null)
-                          setMesaArrastrada(mesa.id)
-                        }}
-                        onDragEnd={() => setMesaArrastrada(null)}
-                        onClick={e => e.stopPropagation()}
-                        title="Arrastra para cambiar la mesa de lugar"
-                        style={{ cursor: 'grab', color: 'var(--color-text-muted)', fontSize: 15, lineHeight: 1, userSelect: 'none' }}
-                      >
-                        ⠿
-                      </span>
+                      {/* Señal visual de que la mesa se puede arrastrar */}
+                      {!ES_TACTIL && (
+                        <span
+                          title="Arrastra la mesa para cambiarla de lugar"
+                          style={{ color: 'var(--color-text-muted)', fontSize: 15, lineHeight: 1, userSelect: 'none' }}
+                        >
+                          ⠿
+                        </span>
+                      )}
                       <p style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 17, margin: 0, color: 'var(--color-text-primary)' }}>
                         {mesa.nombre}
                       </p>
@@ -474,6 +476,8 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
                       >
                         Eliminar
                       </button>
+                      {/* Flechas solo en celular/tableta, donde no se puede arrastrar */}
+                      {ES_TACTIL && (<>
                       <button
                         onClick={e => { e.stopPropagation(); moverMesaUnLugar(mesa.id, -1) }}
                         disabled={indiceMesa === 0}
@@ -490,6 +494,7 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
                       >
                         ▶
                       </button>
+                      </>)}
                     </div>
                   </div>
                   <div style={{ height: 3, background: 'var(--color-surface-muted)', borderRadius: 2, overflow: 'hidden', marginBottom: 10 }}>
