@@ -3,6 +3,7 @@ import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy 
 import { db } from '../lib/firebaseClient'
 import { asignarInvitadoAMesa, quitarDeMesaEspecifica, corregirMesasDesactualizadas } from '../lib/mesaHelpers'
 import { exportarMesasExcel } from '../lib/exportarExcel'
+import { coincideBusqueda } from '../lib/texto'
 
 export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
   const [invitados, setInvitados] = useState([])
@@ -14,6 +15,7 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
   const [invitadoArrastrado, setInvitadoArrastrado] = useState(null)
   const [mesaEditando, setMesaEditando] = useState(null)
   const [procesando, setProcesando] = useState(false)
+  const [busqueda, setBusqueda] = useState('')
 
   useEffect(() => {
     cargarTodo()
@@ -54,7 +56,10 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
 
   // ID de invitados que ya están en alguna mesa, para no mostrarlos dos veces
   const idsAsignados = new Set(mesas.flatMap(m => m.asignaciones.map(a => a.invitado_id)))
-  const invitadosLibres = invitados.filter(i => !idsAsignados.has(i.id))
+  // El buscador ignora acentos, mayúsculas y orden: "lopez hector" encuentra "Héctor López"
+  const invitadosLibres = invitados
+    .filter(i => !idsAsignados.has(i.id))
+    .filter(i => coincideBusqueda(i.nombre_familia, busqueda))
 
   const confirmados = invitadosLibres.filter(i => i.estado_rsvp === 'confirmado')
   const pendientes = invitadosLibres.filter(i => i.estado_rsvp === 'pendiente')
@@ -152,6 +157,39 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
           overscrollBehavior: 'contain',
           paddingRight: 6,
         }}>
+          {/* Buscador: se queda arriba aunque deslices la lista */}
+          <div style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--color-bg)', paddingBottom: 10 }}>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                value={busqueda}
+                onChange={e => setBusqueda(e.target.value)}
+                placeholder="Buscar invitado…"
+                style={{
+                  width: '100%', padding: '8px 30px 8px 10px', border: '0.5px solid var(--color-border)',
+                  borderRadius: 8, fontSize: 13, fontFamily: 'var(--font-sans)', boxSizing: 'border-box',
+                  background: 'var(--color-surface)',
+                }}
+              />
+              {busqueda && (
+                <button
+                  onClick={() => setBusqueda('')}
+                  title="Borrar búsqueda"
+                  style={{
+                    position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                    background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 13,
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            {busqueda && invitadosLibres.length === 0 && (
+              <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '8px 0 0' }}>
+                Nadie sin mesa coincide con "{busqueda}".
+              </p>
+            )}
+          </div>
           <SeccionInvitados titulo="Confirmados" color="var(--color-sage)" invitados={confirmados} seleccionado={invitadoArrastrado} onArrastrar={setInvitadoArrastrado} />
           <SeccionInvitados titulo="Pendientes" color="var(--color-text-muted)" invitados={pendientes} seleccionado={invitadoArrastrado} onArrastrar={setInvitadoArrastrado} />
           <SeccionInvitados titulo="No confirmados" color="var(--color-coral)" invitados={noConfirmados} seleccionado={invitadoArrastrado} onArrastrar={setInvitadoArrastrado} />
