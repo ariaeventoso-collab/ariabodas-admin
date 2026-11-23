@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, orderBy, query } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
 import { coincideBusqueda } from '../lib/texto'
-import { quitarInvitadoDeMesas, actualizarLugaresEnMesas } from '../lib/mesaHelpers'
+import { quitarInvitadoDeMesas, sincronizarInvitadoEnMesas } from '../lib/mesaHelpers'
 import ImportarExcel from './ImportarExcel'
 import { exportarInvitadosExcel } from '../lib/exportarExcel'
 
@@ -60,7 +60,9 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
     }
 
     const original = invitados.find(i => i.id === invitadoEditando.id)
-    const cambioDePases = original && original.pases_asignados !== pasesNuevos
+    const cambioDePases = original && Number(original.pases_asignados) !== pasesNuevos
+    const nombreNuevo = invitadoEditando.nombre_familia.trim()
+    const cambioDeNombre = original && original.nombre_familia !== nombreNuevo
 
     // Si el invitado ya estaba confirmado, sus pases_confirmados deben
     // moverse junto con pases_asignados — si no, la mesa se queda con el
@@ -79,10 +81,14 @@ export default function GestionInvitados({ boda, onVolver, ocultarVolver }) {
 
     await updateDoc(doc(db, 'bodas', boda.id, 'invitados', invitadoEditando.id), datosActualizados)
 
-    // Si estaba sentado en una mesa, sincroniza el número de lugares que
-    // ocupa ahí también (transaccional, ver lib/mesaHelpers.js).
-    if (yaConfirmado && cambioDePases) {
-      await actualizarLugaresEnMesas(boda.id, invitadoEditando.id, pasesNuevos)
+    // Si estaba sentado en una mesa (confirmado o todavía pendiente),
+    // la mesa se actualiza con los pases y el nombre nuevos
+    // (transaccional, ver lib/mesaHelpers.js).
+    if (cambioDePases || cambioDeNombre) {
+      const cambios = {}
+      if (cambioDePases) cambios.lugares_ocupados = pasesNuevos
+      if (cambioDeNombre) cambios.nombre_familia = nombreNuevo
+      await sincronizarInvitadoEnMesas(boda.id, invitadoEditando.id, cambios)
     }
 
     if (cambioDePases) {

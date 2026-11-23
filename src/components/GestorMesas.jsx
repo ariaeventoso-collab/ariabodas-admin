@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
-import { asignarInvitadoAMesa, quitarDeMesaEspecifica } from '../lib/mesaHelpers'
+import { asignarInvitadoAMesa, quitarDeMesaEspecifica, corregirMesasDesactualizadas } from '../lib/mesaHelpers'
 import { exportarMesasExcel } from '../lib/exportarExcel'
 
 export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
@@ -25,8 +25,16 @@ export default function GestorMesas({ boda, onVolver, ocultarVolver }) {
       query(collection(db, 'bodas', boda.id, 'invitados'), orderBy('nombre_familia'))
     )
     const mesasSnap = await getDocs(collection(db, 'bodas', boda.id, 'mesas'))
-    setInvitados(invitadosSnap.docs.map(d => ({ id: d.id, ...d.data() })))
-    setMesas(mesasSnap.docs.map(d => ({ id: d.id, ...d.data(), asignaciones: d.data().asignaciones || [] })))
+    const listaInvitados = invitadosSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+    let listaMesas = mesasSnap.docs.map(d => ({ id: d.id, ...d.data(), asignaciones: d.data().asignaciones || [] }))
+    // Si alguna mesa quedó con pases o nombres viejos, se corrige aquí
+    try {
+      listaMesas = await corregirMesasDesactualizadas(boda.id, listaMesas, listaInvitados)
+    } catch (e) {
+      // Si no se pudo corregir, se muestran como están
+    }
+    setInvitados(listaInvitados)
+    setMesas(listaMesas)
     setCargando(false)
   }
 

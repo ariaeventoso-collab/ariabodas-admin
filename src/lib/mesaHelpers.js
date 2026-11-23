@@ -38,7 +38,7 @@ export async function quitarInvitadoDeMesas(bodaId, invitadoId) {
  */
 export async function asignarInvitadoAMesa(bodaId, mesaId, invitado, forzar = false) {
   const mesaRef = doc(db, 'bodas', bodaId, 'mesas', mesaId)
-  const lugaresQueOcupa = invitado.pases_confirmados ?? invitado.pases_asignados ?? 1
+  const lugaresQueOcupa = lugaresDeInvitado(invitado)
 
   return runTransaction(db, async (tx) => {
     const snap = await tx.get(mesaRef)
@@ -74,13 +74,11 @@ export async function asignarInvitadoAMesa(bodaId, mesaId, invitado, forzar = fa
 }
 
 /**
- * Actualiza el número de lugares que ocupa un invitado en la mesa donde
- * esté sentado, sin moverlo ni tocar su asignación. Se usa cuando el admin
- * edita el número de pases de alguien que ya estaba confirmado y sentado
- * — sin esto, la mesa se queda mostrando el número de pases viejo aunque
- * el invitado (en Invitados) ya muestre el número correcto.
+ * Copia a la mesa los datos actuales de un invitado (lugares y/o nombre)
+ * en cualquier mesa donde esté sentado, sin moverlo de lugar.
+ * cambios: { lugares_ocupados?: number, nombre_familia?: string }
  */
-export async function actualizarLugaresEnMesas(bodaId, invitadoId, nuevosLugares) {
+export async function sincronizarInvitadoEnMesas(bodaId, invitadoId, cambios) {
   const mesasSnap = await getDocs(collection(db, 'bodas', bodaId, 'mesas'))
   const mesasConEsteInvitado = mesasSnap.docs.filter(mesaDoc =>
     (mesaDoc.data().asignaciones || []).some(a => a.invitado_id === invitadoId)
@@ -93,11 +91,56 @@ export async function actualizarLugaresEnMesas(bodaId, invitadoId, nuevosLugares
       if (!snap.exists()) return
       const asignaciones = snap.data().asignaciones || []
       const nuevas = asignaciones.map(a =>
-        a.invitado_id === invitadoId ? { ...a, lugares_ocupados: nuevosLugares } : a
+        a.invitado_id === invitadoId ? { ...a, ...cambios } : a
       )
       tx.update(mesaRef, { asignaciones: nuevas })
     })
   }
+}
+
+/**
+ * Cuántos lugares debe ocupar un invitado en su mesa: lo que confirmó,
+ * o si sigue pendiente, los pases que tiene asignados.
+ */
+export function lugaresDeInvitado(invitado) {
+  return invitado.pases_confirmados ?? invitado.pases_asignados ?? 1
+}
+
+/**
+ * Revisa todas las mesas y corrige las que tengan lugares o nombres
+ * distintos a los del invitado (por ejemplo, cambios hechos antes de que
+ * existiera la sincronización). Devuelve las mesas ya corregidas.
+ */
+export async function corregirMesasDesactualizadas(bodaId, mesas, invitados) {
+  const porId = Object.fromEntries(invitados.map(i => [i.id, i]))
+  const resultado = []
+
+  for (const mesa of mesas) {
+    const asignaciones = mesa.asignaciones || []
+    const hayDiferencias = asignaciones.some(a => {
+      const inv = porId[a.invitado_id]
+      return inv && (a.lugares_ocupados !== lugaresDeInvitado(inv) || a.nombre_familia !== inv.nombre_familia)
+    })
+    if (!hayDiferencias) {
+      resultado.push(mesa)
+      continue
+    }
+
+    const mesaRef = doc(db, 'bodas', bodaId, 'mesas', mesa.id)
+    const nuevas = await runTransaction(db, async (tx) => {
+      const snap = await tx.get(mesaRef)
+      if (!snap.exists()) return asignaciones
+      const actuales = (snap.data().asignaciones || []).map(a => {
+        const inv = porId[a.invitado_id]
+        if (!inv) return a
+        return { ...a, lugares_ocupados: lugaresDeInvitado(inv), nombre_familia: inv.nombre_familia }
+      })
+      tx.update(mesaRef, { asignaciones: actuales })
+      return actuales
+    })
+    resultado.push({ ...mesa, asignaciones: nuevas })
+  }
+  return resultado
 }
 
 /**
