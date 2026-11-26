@@ -1,4 +1,6 @@
-import * as XLSX from 'xlsx'
+// xlsx-js-style es la misma librería de Excel (SheetJS) pero permite dar
+// formato a las celdas: letra grande, negritas, colores y celdas combinadas.
+import * as XLSX from 'xlsx-js-style'
 
 // ============================================
 // Exportar listas a Excel (.xlsx)
@@ -35,8 +37,24 @@ function crearHoja(filas, encabezados) {
     const largo = Math.max(enc.length, ...filas.map(f => String(f[enc] ?? '').length))
     return { wch: Math.min(60, largo + 2) }
   })
+  // Encabezados en negritas
+  encabezados.forEach((_, c) => {
+    const celda = hoja[XLSX.utils.encode_cell({ r: 0, c })]
+    if (celda) celda.s = ESTILO_ENCABEZADO
+  })
   return hoja
 }
+
+const ESTILO_ENCABEZADO = {
+  font: { bold: true, sz: 11 },
+  fill: { patternType: 'solid', fgColor: { rgb: 'EFEFEF' } },
+}
+const ESTILO_TITULO_MESA = {
+  font: { bold: true, sz: 18 },
+  fill: { patternType: 'solid', fgColor: { rgb: 'E8EFE9' } },
+  alignment: { vertical: 'center' },
+}
+const ESTILO_TOTAL = { font: { bold: true } }
 
 // Mapa invitado_id -> nombre de la mesa donde está sentado
 function mapaMesaPorInvitado(mesas) {
@@ -111,27 +129,65 @@ export function exportarMesasExcel(boda, mesas, invitados) {
   const invitadoPorId = Object.fromEntries((invitados || []).map(i => [i.id, i]))
   const ordenadas = ordenarMesas(mesas)
 
+  // Hoja "Mesas": cada mesa empieza con un título grande
+  // ("MESA 1 · familia paola") y debajo sus invitados como siempre.
   const encDetalle = ['Mesa', 'Familia / Invitado', 'Lugares', 'Teléfono', 'Estado']
-  const filasDetalle = []
-  for (const mesa of ordenadas) {
+  const filas = [encDetalle]
+  const filasTitulo = []
+  const filasTotal = []
+  ordenadas.forEach((mesa, i) => {
     const asignaciones = mesa.asignaciones || []
     const ocupados = asignaciones.reduce((s, a) => s + (a.lugares_ocupados || 0), 0)
+
+    filasTitulo.push(filas.length)
+    filas.push([`MESA ${i + 1} · ${mesa.nombre}`, '', '', '', ''])
+
     if (asignaciones.length === 0) {
-      filasDetalle.push({ 'Mesa': mesa.nombre, 'Familia / Invitado': '(vacía)', 'Lugares': 0 })
+      filas.push([mesa.nombre, '(vacía)', 0, '', ''])
     }
     for (const a of asignaciones) {
       const inv = invitadoPorId[a.invitado_id]
-      filasDetalle.push({
-        'Mesa': mesa.nombre,
-        'Familia / Invitado': a.nombre_familia || inv?.nombre_familia || '',
-        'Lugares': a.lugares_ocupados || 0,
-        'Teléfono': telefonoCompleto(inv),
-        'Estado': textoEstado(inv?.estado_rsvp),
-      })
+      filas.push([
+        mesa.nombre,
+        a.nombre_familia || inv?.nombre_familia || '',
+        a.lugares_ocupados || 0,
+        telefonoCompleto(inv),
+        textoEstado(inv?.estado_rsvp),
+      ])
     }
-    filasDetalle.push({ 'Familia / Invitado': `Total ${mesa.nombre}`, 'Lugares': `${ocupados} de ${mesa.capacidad}` })
-    filasDetalle.push({})
-  }
+    filasTotal.push(filas.length)
+    filas.push(['', `Total ${mesa.nombre}`, `${ocupados} de ${mesa.capacidad}`, '', ''])
+    filas.push(['', '', '', '', ''])
+  })
+
+  const hojaMesas = XLSX.utils.aoa_to_sheet(filas)
+  // Ancho de columnas (sin contar los títulos, que ocupan toda la fila)
+  hojaMesas['!cols'] = encDetalle.map((enc, c) => {
+    const largo = Math.max(enc.length, ...filas
+      .filter((_, r) => !filasTitulo.includes(r))
+      .map(f => String(f[c] ?? '').length))
+    return { wch: Math.min(60, largo + 2) }
+  })
+  // Títulos: celdas combinadas de la columna A a la E, letra grande
+  hojaMesas['!merges'] = filasTitulo.map(r => ({ s: { r, c: 0 }, e: { r, c: encDetalle.length - 1 } }))
+  hojaMesas['!rows'] = []
+  filasTitulo.forEach(r => {
+    hojaMesas['!rows'][r] = { hpt: 30 }
+    for (let c = 0; c < encDetalle.length; c++) {
+      const ref = XLSX.utils.encode_cell({ r, c })
+      if (!hojaMesas[ref]) hojaMesas[ref] = { t: 's', v: '' }
+      hojaMesas[ref].s = ESTILO_TITULO_MESA
+    }
+  })
+  encDetalle.forEach((_, c) => {
+    hojaMesas[XLSX.utils.encode_cell({ r: 0, c })].s = ESTILO_ENCABEZADO
+  })
+  filasTotal.forEach(r => {
+    for (const c of [1, 2]) {
+      const celda = hojaMesas[XLSX.utils.encode_cell({ r, c })]
+      if (celda) celda.s = ESTILO_TOTAL
+    }
+  })
 
   const encResumen = ['Mesa', 'Capacidad', 'Ocupados', 'Lugares libres', 'Familias en la mesa']
   const filasResumen = ordenadas.map(mesa => {
@@ -157,7 +213,7 @@ export function exportarMesasExcel(boda, mesas, invitados) {
     }))
 
   const libro = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(libro, crearHoja(filasDetalle, encDetalle), 'Mesas')
+  XLSX.utils.book_append_sheet(libro, hojaMesas, 'Mesas')
   XLSX.utils.book_append_sheet(libro, crearHoja(filasResumen, encResumen), 'Resumen')
   XLSX.utils.book_append_sheet(libro, crearHoja(filasSinMesa, encSinMesa), 'Sin mesa')
   XLSX.writeFile(libro, nombreArchivo('Mesas', boda))
