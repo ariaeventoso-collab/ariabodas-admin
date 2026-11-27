@@ -1,5 +1,16 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/pao-jorge",
+      "destination": "/pao-jorge/index.html"
+    },
+    {
+      "source": "/pao-jorge/:pagina",
+      "destination": "/pao-jorge/:pagina.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }
